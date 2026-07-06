@@ -1,0 +1,5 @@
+subsystem,requirement,value,source_artifact,notes
+OFP1 transport,production transport,USB High Speed or external page spool RAM,out/v2_ofp1_realtime_spool.json,USB Full Speed is service/debug unless slowed or pre-spooled
+OFP1 transport,first-build decoded ring,128 KiB,out/v2_ofp1_realtime_spool.json,covers 100 ms at 12 ppm when prefilled
+OFP1 transport,clutch-start condition,decoded buffer margin proven,out/v2_ofp1_realtime_spool.json,no paper motion merely because JOB_START decoded
+OFP1 transport,USB FS service mode,8 ppm with larger ring or pre-spool,out/v2_ofp1_realtime_spool.json,32-line ring remains insufficient for 100 ms pause

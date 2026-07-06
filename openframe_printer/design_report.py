@@ -17,8 +17,19 @@ from .dev_probe import dev_probe_summary
 from .transfer_model import transfer_impedance_plan
 from .ofp1 import transport_budget
 from .interlock_faults import interlock_fault_summary
-from .halftone import printability_summary
-from .toner_budget import toner_mass_balance
+from .halftone import printability_summary, halftone_floor_gate
+from .toner_budget import toner_mass_balance, toner_artifact_consistency
+from .fuser_power import fuser_power_summary
+from .led_thermal import led_thermal_summary
+from .ofp1_realtime import realtime_spool_summary
+from .motion_registration import motion_registration_summary
+from .optical_mtf import optical_mtf_summary
+from .fuser_safety import fuser_safety_summary
+from .erase_model import erase_summary
+from .hv_discharge import hv_discharge_summary
+from .environment_model import environment_summary
+from .emissions_model import emissions_summary
+from .registration_budget import registration_summary
 from .units import lint_artifact
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,7 +166,20 @@ def build_report() -> list[Path]:
     paths.append(write_json("v2_ofp1_transport_budget.json", transport_budget(t)))
     paths.append(write_json("v2_interlock_fault_analysis.json", interlock_fault_summary()))
     paths.append(write_json("v2_halftone_printability.json", printability_summary(t)))
+    paths.append(write_json("v2_halftone_floor_gate.json", halftone_floor_gate(t)))
     paths.append(write_json("v2_toner_mass_balance.json", toner_mass_balance(t)))
+    paths.append(write_json("v2_toner_artifact_consistency.json", toner_artifact_consistency(t)))
+    paths.append(write_json("v2_fuser_power_balance.json", fuser_power_summary(t)))
+    paths.append(write_json("v2_led_thermal_feedforward.json", led_thermal_summary(t)))
+    paths.append(write_json("v2_ofp1_realtime_spool.json", realtime_spool_summary(t)))
+    paths.append(write_json("v2_motion_registration_budget.json", motion_registration_summary(t)))
+    paths.append(write_json("v2_optical_mtf_budget.json", optical_mtf_summary(t)))
+    paths.append(write_json("v2_fuser_thermal_safety.json", fuser_safety_summary()))
+    paths.append(write_json("v2_erase_ghost_budget.json", erase_summary(t)))
+    paths.append(write_json("v2_hv_discharge_bleed.json", hv_discharge_summary()))
+    paths.append(write_json("v2_environment_derating.json", environment_summary()))
+    paths.append(write_json("v2_emissions_containment.json", emissions_summary()))
+    paths.append(write_json("v2_registration_edge_budget.json", registration_summary(t)))
 
     paths.append(write_csv("v2_led_group_map.csv", led_group_map(t)))
     paths.append(write_csv("v2_fuser_sim.csv", fuser["rows"]))
@@ -225,20 +249,90 @@ It describes a new printer design, not a donor-printer conversion.
   Speed bulk ceiling. Verdict: HS (or engine page RAM) for 12 ppm production, FS as
   the degraded service mode. See `v2_ofp1_transport_budget.json`.
 - Interlock single-fault analysis: with adversarial firmware, the documented one-switch-
-  per-door chain has 7 single-point-failure nets (welded contact, shorted loop, stuck
-  enable gate) that leave hazards live with a door open. The Rev E dual-chain topology
-  (logic gates + independent energy-path relay) has zero; defeating it needs two faults.
-  See `v2_interlock_fault_analysis.json`.
+  per-door chain has single-point-failure nets (welded contact, shorted loop, stuck
+  enable gate) that leave hazards live with a door open. Rev E's dual-chain topology
+  survives independent electrical stuck-at faults; Rev F adds the missing mechanical
+  common-cause fault and requires a physically diverse energy-path break. See
+  `v2_interlock_fault_analysis.json`.
 - Halftone printability: EP cannot develop isolated 42 µm pixels stably, so the host
-  screen is now an executable constraint — a 2×2-seeded clustered-dot screen emits zero
-  isolated pixels at every tone while Bayer and error diffusion emit hundreds per
-  64×64 patch in highlights. See `v2_halftone_printability.json`.
+  screen is executable. Rev E made the right clustered-dot choice but Rev F fixed the
+  sub-floor partial-seed bug: the production screen emits zero isolated or sub-2x2
+  features in the generated gate. See `v2_halftone_printability.json` and
+  `v2_halftone_floor_gate.json`.
 - Toner mass balance: retires the unsourced "about 2400 pages" doc claim (the same
   doc/artifact-drift class the HV consistency gate exists for). Loss-adjusted yield is
   ~3990 pages per 80 g at 5%: imperfect transfer and hopper residual cost 17% versus the
   naive figure. Also derives the waste-cavity volume the cartridge RFQ requirement
   implies (≥28 cm³) and the pixel-count gauge constant that replaces DRM chips.
   See `v2_toner_mass_balance.json`.
+
+## Rev F added gates
+
+- Halftone floor correction: Rev E's raw 2x2-seeded screen still emitted partial
+  seed dots below the declared 4/64 highlight floor. Rev F clips sub-floor
+  tones and suppresses sub-2x2 connected components; `v2_halftone_floor_gate.json`
+  proves the old bug and the new gate.
+- Interlock common-cause correction: Rev E's dual-chain topology is safe only
+  against independent electrical stuck-at faults. Rev F models a single shared
+  door-actuator failure that defeats both switch contacts, then requires a
+  physically diverse energy-path separator; see `v2_interlock_fault_analysis.json`.
+- Toner artifact consistency: the base design calcs no longer publish the old
+  unqualified ~4800-page toner number. It survives only as an explicitly labeled
+  naive upper bound; `v2_toner_artifact_consistency.json` gates this.
+- Fuser continuous paper-load balance: the warm-up curve was not a throughput
+  proof. `v2_fuser_power_balance.json` charges the fuser for paper mass, moisture,
+  and toner at 12 ppm and shows the 800 W / 0.235 C/W first-build fuser lacks a
+  10% steady reserve on nominal 75 gsm media.
+- LED thermal feed-forward: H9 now computes printhead group droop from the raster
+  payload and emits bounded pulse compensation before photodiode/PIDC trimming;
+  see `v2_led_thermal_feedforward.json`.
+
+## Rev G added gates
+
+- OFP1 real-time spool budget: Rev E proved CRC/framing correctness, but not that
+  USB Full Speed plus a 32-line ring can feed a moving engine through host stalls.
+  `v2_ofp1_realtime_spool.json` shows the Rev E ring tolerates only about
+  {realtime_spool_summary(t)['revE_pause_tolerance_ms']:.1f} ms; a 100 ms first-build
+  pause target needs {realtime_spool_summary(t)['required_buffer_bytes_for_100ms_pause']} bytes,
+  and USB FS at 75% of its theoretical bulk ceiling cannot sustain 12 ppm worst-case pages.
+- Motion registration budget: a 0.5% open-loop process-speed error stretches Letter by
+  {motion_registration_summary(t)['open_loop_cases'][1]['page_scale_error_lines']:.1f} lines.
+  Rev G requires encoder-slaved LED line timing; registration sensors set phase, not
+  continuous line spacing. See `v2_motion_registration_budget.json`.
+- LED optical MTF budget: 5120 emitters and correct shift timing do not prove
+  600 dpi latent-image contrast. Rev G requires MTF >=
+  {optical_mtf_summary(t)['required_mtf_at_nyquist']:.2f} at
+  {optical_mtf_summary(t)['nyquist_lp_per_mm']:.2f} lp/mm, roughly equivalent in the
+  Gaussian model to spot FWHM <=
+  {optical_mtf_summary(t)['max_gaussian_spot_fwhm_um_for_mtf_gate']:.1f} µm.
+- Fuser thermal safety model: Rev F's power balance is not a runaway proof.
+  `v2_fuser_thermal_safety.json` proves firmware-only heat control has
+  {fuser_safety_summary()['topology_firmware_only']['single_fault_violation_count']}
+  single-fault runaway paths; independent thermostat plus one-shot fuse has
+  {fuser_safety_summary()['topology_revG_thermostat_plus_one_shot_fuse']['single_fault_violation_count']}.
+
+## Rev G added engines
+
+- Erase/quench station: prior revisions cleaned residual toner but never specified
+  the erase exposure that removes residual latent charge. `v2_erase_ghost_budget.json`
+  now fails the pre-RevG state and requires a post-cleaning erase source before
+  the PCR; it also gives the drum-circumference ghost distance the scanner rig
+  should search.
+- HV stored-charge discharge: interlocks are not enough if HV output capacitors
+  remain charged. `v2_hv_discharge_bleed.json` sizes redundant bleeders and
+  checks both normal 60 V and single-fault 120 V two-second gates.
+- Humidity/process derating: toner charge and paper transfer are now tied to RH
+  and measured impedance. `v2_environment_derating.json` forces humid/unknown
+  toner into PIDC/developer/transfer calibration instead of pretending the
+  nominal ladder is universal.
+- Emissions containment: OpenFrame can be serviceable, but it cannot be an open
+  fuser/exit plume. `v2_emissions_containment.json` makes fan-only filtering fail
+  for high emitters and requires source plus output-path capture before bench
+  emissions qualification.
+- Registration/edge budget: OFP1 determinism did not prove the image lands on
+  paper. `v2_registration_edge_budget.json` shows the 5120-pixel bar has only
+  ~0.37 mm lateral slack per side; a real 1 mm per-side slack goal needs a
+  byte-aligned 5184-pixel bar or a reduced printable width.
 
 ## Generated files
 
@@ -260,12 +354,25 @@ It describes a new printer design, not a donor-printer conversion.
 - `v2_transfer_impedance_plan.json`: Rev D paper-impedance transfer-current plan
 - `v2_ofp1_transport_budget.json`: Rev E OFP1 wire-protocol overhead and USB budget
 - `v2_interlock_fault_analysis.json`: Rev E exhaustive single/double-fault interlock analysis
-- `v2_halftone_printability.json`: Rev E EP-safe screen choice with isolated-pixel counts
-- `v2_toner_mass_balance.json`: Rev E loss-adjusted yield, waste-cavity sizing, pixel gauge
+- `v2_halftone_printability.json`: Rev F EP-safe screen choice with isolated/subcluster feature counts
+- `v2_halftone_floor_gate.json`: Rev F proof that raw Rev E screen emitted partial seed dots and the production screen does not
+- `v2_toner_mass_balance.json`: Rev E/F loss-adjusted yield, waste-cavity sizing, pixel gauge
+- `v2_toner_artifact_consistency.json`: Rev F gate preventing unqualified toner-yield drift in base design calcs
+- `v2_fuser_power_balance.json`: Rev F continuous fuser paper/moisture/toner load balance
+- `v2_led_thermal_feedforward.json`: Rev F payload-derived LED group thermal compensation model
+- `v2_erase_ghost_budget.json`: Rev G erase/quench dose and one-revolution ghost budget
+- `v2_hv_discharge_bleed.json`: Rev G redundant HV stored-charge bleed-down gate
+- `v2_environment_derating.json`: Rev G humidity/toner/transfer derating table
+- `v2_emissions_containment.json`: Rev G fuser/output emissions containment gate
+- `v2_registration_edge_budget.json`: Rev G registration timing and LED edge-slack budget
+- `v2_ofp1_realtime_spool.json`: Rev G real-time host/spool/buffer budget
+- `v2_motion_registration_budget.json`: Rev G line-pitch error and encoder resolution budget
+- `v2_optical_mtf_budget.json`: Rev G LED-bar spot/MTF/crosstalk gate
+- `v2_fuser_thermal_safety.json`: Rev G fuser runaway single-fault model
 
 ## First v2 hardware direction
 
-The first physical rig should be a cold paper-motion rig with no toner, no fuser heat, and no HV enabled. The second rig adds the LED timing path into a photodiode capture jig. The third rig adds a potted current-limited HV module and dummy loads. The fourth rig adds a cold process cartridge. The fifth rig closes the fuser loop under redundant thermal cutoff. That sequence builds a new printer without depending on any donor machine.
+The first physical rig should be a cold paper-motion rig with no toner, no fuser heat, and no HV enabled. The second rig adds the LED timing path into a photodiode capture jig. The third rig adds a potted current-limited HV module and dummy loads with Rev G bleed-down measurements. The fourth rig adds a cold process cartridge with erase/quench and registration-edge checks. The fifth rig closes the fuser loop under redundant thermal cutoff and emissions capture. That sequence builds a new printer without depending on any donor machine.
 """, encoding="utf-8")
     paths.append(report)
     return paths

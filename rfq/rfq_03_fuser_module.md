@@ -2,8 +2,8 @@
 
 Document: OpenFrame M1 module RFQ  
 Module ID: OF-M1-FUSER  
-Revision: B, aligned to OpenFrame M1 Rev A v2  
-Referenced platform docs: `docs/20_fuser_module_detail.md`, `hardware/design_targets_revA.yaml`
+Revision: G, aligned to OpenFrame M1 Rev G  
+Referenced platform docs: `docs/20_fuser_module_detail.md`, `docs/52_revG_fuser_thermal_safety.md`, `hardware/design_targets_revA.yaml`
 
 ## 1. What we are buying
 
@@ -57,5 +57,6 @@ A replaceable monochrome laser-printer-style fuser module for a new open printer
 | Warm-up | reaches print-enable threshold without exceeding warning threshold |
 | Overtemp | independent thermostat opens heater circuit |
 | Fuse | one-shot thermal fuse opens on abnormal runaway test |
+| Rev G fault model | thermistor stuck-cold, firmware output stuck-on, and SSR-welded cases do not keep heater energized above fault temperature |
 | Paper transport | 100 sheets pass through fuser nip without accordion jam |
 | Rub test | toner remains fused after normal cooling at nominal temp |

@@ -13,6 +13,8 @@ OpenFrame M1 Rev A uses a fixed LED printbar instead of a spinning laser scanner
 | Starting wavelength | 780 nm |
 | Nominal exposure target | 0.45 µJ/cm² |
 | Exposure sweep | 0.15-1.00 µJ/cm² |
+| Rev G MTF gate | ≥0.35 at 12 lp/mm at OPC plane |
+| Rev G spot shortcut | ≤45 µm FWHM and ≤15% one-pixel crosstalk |
 
 ## Timing constants at 12 ppm
 
@@ -58,3 +60,10 @@ The line timer must not round 682.796 µs to a fixed integer delay and repeat it
 3. LED exposure onto sacrificial OPC strip: sweep exposure without toner.
 4. Add developer and transfer: sweep charge/developer/transfer values.
 5. Lock density table only after multiple toner and humidity runs.
+
+
+## Rev G optical acceptance
+
+`out/v2_optical_mtf_budget.json` is now part of the LED-bar acceptance package. Pixel count, pitch, and shift-clock timing do not prove latent-image contrast. The supplier must provide measured MTF at the OPC plane or equivalent spot-size/crosstalk data that passes the Rev G model.
+
+A 50 µm Gaussian-equivalent spot is a failing negative control in the model even though it may look close to a 42.333 µm pixel pitch; it misses the MTF gate at 600 dpi Nyquist.

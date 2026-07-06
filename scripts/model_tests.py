@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from openframe_printer.engine_math import EngineTargets, process_speed_mm_s  # noqa: E402
+from openframe_printer.engine_math import EngineTargets, design_calcs, process_speed_mm_s  # noqa: E402
 from openframe_printer.dev_probe import developer_probe_budget, recommended_patch_for_monitor_noise  # noqa: E402
 from openframe_printer.transfer_model import choose_transfer_current, transfer_impedance_plan  # noqa: E402
 from openframe_printer.hv_model import hv_table, hv_consistency_summary  # noqa: E402
@@ -48,17 +48,42 @@ from openframe_printer.ofp1 import (  # noqa: E402
 from openframe_printer.interlock_faults import (  # noqa: E402
     eval_topology_a,
     eval_topology_b,
+    eval_topology_c,
     interlock_fault_summary,
 )
 from openframe_printer.halftone import (  # noqa: E402
     bayer_matrix,
     clustered_matrix,
+    ep_safe_clustered_halftone,
+    feature_metrics,
     floyd_steinberg,
+    halftone_floor_gate,
     isolated_black_pixels,
     printability_summary,
     screen_halftone,
 )
-from openframe_printer.toner_budget import TonerAssumptions, toner_mass_balance  # noqa: E402
+from openframe_printer.toner_budget import (  # noqa: E402
+    TonerAssumptions,
+    toner_artifact_consistency,
+    toner_mass_balance,
+)
+from openframe_printer.fuser_power import fuser_power_summary, paper_load_case  # noqa: E402
+from openframe_printer.led_thermal import led_thermal_summary, simulate_led_thermal_case  # noqa: E402
+from openframe_printer.ofp1_realtime import realtime_spool_summary, max_ppm_for_host_utilization  # noqa: E402
+from openframe_printer.motion_registration import (  # noqa: E402
+    EncoderSpec,
+    encoder_resolution,
+    motion_registration_summary,
+    open_loop_scale_error,
+    sensor_timestamp_error,
+)
+from openframe_printer.optical_mtf import optical_case, optical_mtf_summary  # noqa: E402
+from openframe_printer.fuser_safety import eval_fuser_topology, fuser_safety_summary, FuserSafetyTopology  # noqa: E402
+from openframe_printer.erase_model import erase_summary, required_erase_energy_uj_cm2, drum_rotation_period_s  # noqa: E402
+from openframe_printer.hv_discharge import HVNode, evaluate_node, hv_discharge_summary, no_bleed_counterexample  # noqa: E402
+from openframe_printer.environment_model import environment_summary, toner_q_over_m_uc_g, evaluate_environment, EnvironmentCase  # noqa: E402
+from openframe_printer.emissions_model import EmissionCase, evaluate_emission_case, emissions_summary  # noqa: E402
+from openframe_printer.registration_budget import registration_summary, minimum_pixels_for_lateral_slack, round_up_to_byte_aligned_pixels  # noqa: E402
 
 
 class HvArtifactTests(unittest.TestCase):
@@ -232,6 +257,19 @@ class DeveloperProbeTests(unittest.TestCase):
         )
 
 
+    def test_base_design_calcs_no_longer_publish_unqualified_4800_page_yield(self) -> None:
+        calcs = design_calcs()
+        self.assertNotIn("first_prototype_prints_per_80g_toner_at_5pct", calcs)
+        self.assertIn(
+            "naive_upper_bound_prints_per_80g_toner_at_5pct_ignores_transfer_and_residual_losses",
+            calcs,
+        )
+        consistency = toner_artifact_consistency()
+        self.assertTrue(consistency["all_checks_pass"], consistency)
+        self.assertLess(consistency["loss_adjusted_pages"], consistency["naive_upper_bound_pages"])
+
+
+
 class TransferControlTests(unittest.TestCase):
     def test_transfer_current_uses_impedance_to_hold_target_voltage(self) -> None:
         choice = choose_transfer_current(30.0, case="normal")
@@ -334,7 +372,7 @@ class InterlockFaultTests(unittest.TestCase):
         self.assertIn("loop:stuck_1", a["single_point_failure_nets"])
         self.assertIn("sw_main_cover:stuck_closed", a["single_point_failure_nets"])
 
-    def test_rev_e_topology_survives_every_single_fault(self) -> None:
+    def test_rev_e_topology_survives_independent_electrical_faults(self) -> None:
         summary = interlock_fault_summary()
         b = summary["topology_b_rev_e_proposal"]
         self.assertTrue(b["verdict_single_fault_safe"])
@@ -347,6 +385,29 @@ class InterlockFaultTests(unittest.TestCase):
         self.assertTrue(all(live_a.values()))
         live_b = eval_topology_b(doors, {"sw_main_cover_a": "stuck_closed"})
         self.assertFalse(any(live_b.values()))
+
+
+class RevFInterlockCommonCauseTests(unittest.TestCase):
+    def test_rev_e_dual_chain_fails_shared_door_actuator_fault(self) -> None:
+        doors = {"main_cover": False, "rear_door": True, "service_panel": True}
+        live = eval_topology_b(doors, {"door_main_cover_common_actuator": "stuck_closed_both_chains"})
+        self.assertTrue(any(live.values()))
+        summary = interlock_fault_summary()
+        b = summary["topology_b_rev_e_with_mechanical_common_cause"]
+        self.assertFalse(b["verdict_single_fault_safe_with_common_cause"])
+        self.assertIn(
+            "door_main_cover_common_actuator:stuck_closed_both_chains",
+            b["single_point_failure_nets"],
+        )
+
+    def test_rev_f_diverse_energy_path_survives_same_fault(self) -> None:
+        doors = {"main_cover": False, "rear_door": True, "service_panel": True}
+        live = eval_topology_c(doors, {"door_main_cover_common_actuator": "stuck_closed_both_chains"})
+        self.assertFalse(any(live.values()))
+        c = interlock_fault_summary()["topology_c_rev_f_diverse_energy_path"]
+        self.assertTrue(c["verdict_single_fault_safe_with_common_cause"])
+        self.assertEqual(c["single_fault_violation_count"], 0)
+
 
 
 class HalftoneTests(unittest.TestCase):
@@ -381,6 +442,29 @@ class HalftoneTests(unittest.TestCase):
         patch = [[2.5 / 64.0] * 8 for _ in range(8)]
         self.assertGreater(isolated_black_pixels(screen_halftone(patch, bayer_matrix())), 0)
         self.assertEqual(isolated_black_pixels(screen_halftone(patch, clustered_matrix())), 0)
+
+
+    def test_rev_e_raw_screen_has_subfloor_partial_seed_bug(self) -> None:
+        patch = [[0.001] * 8 for _ in range(8)]
+        raw = screen_halftone(patch, clustered_matrix())
+        metrics = feature_metrics(raw)
+        self.assertGreater(metrics["isolated_black_pixels"], 0)
+        self.assertGreater(metrics["sub_min_cluster_components"], 0)
+        gate = halftone_floor_gate()
+        self.assertTrue(gate["revE_raw_screen_bug_reproduced"])
+
+    def test_rev_f_safe_screen_clips_subfloor_and_requires_2x2(self) -> None:
+        matrix = clustered_matrix()
+        for level in (0.001, 0.01, 1.0 / 64.0, 0.03, 0.05):
+            safe = ep_safe_clustered_halftone([[level] * 64 for _ in range(64)], matrix)
+            metrics = feature_metrics(safe)
+            self.assertEqual(metrics["black_pixels"], 0)
+            self.assertTrue(metrics["ep_safe"])
+        at_floor = ep_safe_clustered_halftone([[4.0 / 64.0] * 64 for _ in range(64)], matrix)
+        metrics = feature_metrics(at_floor)
+        self.assertGreater(metrics["black_pixels"], 0)
+        self.assertTrue(metrics["ep_safe"])
+
 
 
 class TonerBudgetTests(unittest.TestCase):
@@ -421,6 +505,194 @@ class TonerBudgetTests(unittest.TestCase):
         balance = toner_mass_balance()
         self.assertGreater(balance["rated_pages_at_coverage"], 3500.0)
         self.assertEqual(balance["doc_consistency"]["retired_claim"], "about 2400 pages")
+
+
+class FuserPowerBalanceTests(unittest.TestCase):
+    def test_warmup_model_is_not_a_12ppm_throughput_proof(self) -> None:
+        summary = fuser_power_summary()
+        nominal = next(c for c in summary["cases"] if c["case"] == "75gsm_plain_nominal")
+        self.assertFalse(nominal["passes_steady_margin_gate"])
+        self.assertGreater(nominal["load_w"]["total_media_load"], 100.0)
+        self.assertLess(nominal["remaining_margin_w"], nominal["required_margin_w"])
+        self.assertGreater(nominal["required_heater_w_for_margin"], nominal["heater_power_w"])
+
+    def test_damp_heavy_media_requires_power_insulation_or_speed_limit(self) -> None:
+        summary = fuser_power_summary()
+        heavy = next(c for c in summary["cases"] if c["case"] == "90gsm_damp_heavy")
+        self.assertEqual(heavy["verdict"], "insulate_raise_power_or_slow_media")
+        self.assertLess(heavy["slow_to_ppm_for_margin_with_existing_fuser"], 6.0)
+        self.assertGreater(heavy["required_thermal_resistance_c_per_w_for_existing_heater"], 0.30)
+
+
+class LedThermalFeedForwardTests(unittest.TestCase):
+    def test_payload_heats_black_groups_more_than_blank_groups(self) -> None:
+        case = simulate_led_thermal_case("left_half_black")
+        self.assertGreater(case["max_temp_rise_c"], case["min_temp_rise_c"] + 2.0)
+        self.assertLess(case["worst_raw_relative_output"], 0.995)
+
+    def test_feedforward_is_bounded_and_reduces_latent_error(self) -> None:
+        summary = led_thermal_summary()
+        self.assertTrue(summary["compensation_bounded"])
+        self.assertGreater(abs(summary["worst_uncompensated_latent_error_v"]), 0.5)
+        self.assertLess(abs(summary["worst_compensated_latent_error_v"]), 0.1)
+
+
+
+class Ofp1RealtimeSpoolTests(unittest.TestCase):
+    def test_rev_e_ring_only_covers_about_22ms_not_100ms(self) -> None:
+        summary = realtime_spool_summary()
+        self.assertGreater(summary["revE_pause_tolerance_ms"], 20.0)
+        self.assertLess(summary["revE_pause_tolerance_ms"], 25.0)
+        self.assertGreater(summary["required_buffer_bytes_for_100ms_pause"], summary["revE_32_line_ring_buffer_bytes"] * 4)
+        case = next(c for c in summary["cases"] if c["case"] == "revE_32_line_ring_10ms_target_only")
+        self.assertFalse(case["can_finish_streaming_without_underrun"])
+
+    def test_full_speed_at_75pct_cannot_sustain_12ppm_worst_case(self) -> None:
+        summary = realtime_spool_summary()
+        case = next(c for c in summary["cases"] if c["case"] == "usb_fs_75pct_worst_case_12ppm_no_margin")
+        self.assertLess(case["host_surplus_bytes_per_s"], 0.0)
+        self.assertFalse(case["can_finish_streaming_without_underrun"])
+        self.assertFalse(summary["full_page_payload_fits_in_rp2040_sram"])
+
+    def test_high_speed_or_slow_mode_with_larger_ring_passes_buffer_gate(self) -> None:
+        cases = {c["case"]: c for c in realtime_spool_summary()["cases"]}
+        self.assertTrue(cases["usb_hs_12ppm_128KiB_ring_passes_100ms"]["can_finish_streaming_without_underrun"])
+        self.assertTrue(cases["usb_fs_degraded_8ppm_128KiB_ring_passes_100ms"]["can_finish_streaming_without_underrun"])
+        self.assertGreater(max_ppm_for_host_utilization(max_utilization=0.60), 8.0)
+
+
+class MotionRegistrationTests(unittest.TestCase):
+    def test_open_loop_half_percent_error_is_tens_of_lines(self) -> None:
+        err = open_loop_scale_error(speed_error_fraction=0.005)
+        self.assertEqual(err["verdict"], "fail")
+        self.assertAlmostEqual(err["page_scale_error_lines"], 33.0, delta=0.1)
+
+    def test_encoder_resolution_gate_rejects_2048_accepts_4096(self) -> None:
+        low = encoder_resolution(EncoderSpec("2048", 2048))
+        high = encoder_resolution(EncoderSpec("4096", 4096))
+        interp = encoder_resolution(EncoderSpec("2048_interp", 2048, interpolation=4))
+        self.assertFalse(low["passes_quarter_line_quantization_gate"])
+        self.assertTrue(high["passes_quarter_line_quantization_gate"])
+        self.assertTrue(interp["passes_quarter_line_quantization_gate"])
+
+    def test_registration_timestamp_jitter_gate(self) -> None:
+        self.assertTrue(sensor_timestamp_error(timestamp_jitter_us=150.0)["passes_quarter_line_gate"])
+        self.assertFalse(sensor_timestamp_error(timestamp_jitter_us=300.0)["passes_quarter_line_gate"])
+        summary = motion_registration_summary()
+        self.assertTrue(summary["recommended_encoder"]["passes_quarter_line_quantization_gate"])
+
+
+class OpticalMtfTests(unittest.TestCase):
+    def test_spot_fwhm_gate_has_sharp_pass_fail_boundary(self) -> None:
+        self.assertTrue(optical_case(45.0)["passes_revG_optical_gate"])
+        self.assertFalse(optical_case(50.0)["passes_revG_optical_gate"])
+        summary = optical_mtf_summary()
+        self.assertGreater(summary["max_gaussian_spot_fwhm_um_for_mtf_gate"], 45.0)
+        self.assertLess(summary["max_gaussian_spot_fwhm_um_for_mtf_gate"], 47.0)
+
+    def test_bad_wide_spot_fails_both_mtf_and_crosstalk(self) -> None:
+        bad = optical_case(85.0)
+        self.assertLess(bad["mtf_at_600dpi_nyquist"], 0.05)
+        self.assertGreater(bad["neighbor_pixel_crosstalk_fraction"], 0.45)
+        self.assertFalse(bad["passes_revG_optical_gate"])
+
+
+class FuserThermalSafetyTests(unittest.TestCase):
+    def test_firmware_only_fuser_control_has_single_fault_runaway_paths(self) -> None:
+        summary = fuser_safety_summary()
+        fw = summary["topology_firmware_only"]
+        self.assertFalse(fw["verdict_single_fault_safe"])
+        self.assertEqual(fw["single_fault_violation_count"], 3)
+        fault_names = {tuple(v["faults"])[0] for v in fw["single_fault_violations"]}
+        self.assertIn("thermistor_stuck_cold", fault_names)
+        self.assertIn("ssr_welded_on", fault_names)
+
+    def test_independent_thermostat_and_fuse_survive_single_faults(self) -> None:
+        summary = fuser_safety_summary()
+        revg = summary["topology_revG_thermostat_plus_one_shot_fuse"]
+        self.assertTrue(revg["verdict_single_fault_safe"])
+        self.assertEqual(revg["single_fault_violation_count"], 0)
+        topo = FuserSafetyTopology("revG", True, True)
+        self.assertFalse(eval_fuser_topology(topo, ["thermistor_stuck_cold"])["heater_continues_above_fault_temp"])
+        self.assertFalse(eval_fuser_topology(topo, ["ssr_welded_on"])["heater_continues_above_fault_temp"])
+
+
+
+class EraseGhostBudgetTests(unittest.TestCase):
+    def test_missing_erase_station_fails_and_revG_dose_passes(self) -> None:
+        summary = erase_summary()
+        self.assertEqual(summary["pre_revG_as_documented"]["verdict"], "fail_ghost_memory_gate")
+        self.assertTrue(summary["revG_requirement"]["passes_energy_window"])
+        self.assertGreater(summary["revG_requirement"]["dose_margin_ratio"], 1.2)
+        self.assertLess(summary["revG_requirement"]["over_image_exposure_ratio"], 5.0)
+
+    def test_ghost_distance_is_one_drum_circumference(self) -> None:
+        summary = erase_summary()
+        self.assertAlmostEqual(summary["ghost_test_pattern"]["predicted_repeat_distance_mm"], 94.2478, delta=0.01)
+        self.assertAlmostEqual(drum_rotation_period_s(), summary["ghost_test_pattern"]["drum_rotation_period_s"], delta=1e-9)
+        self.assertGreater(required_erase_energy_uj_cm2(), 0.55)
+
+
+class HVDischargeBleedTests(unittest.TestCase):
+    def test_no_bleeder_is_an_explicit_counterexample(self) -> None:
+        counter = no_bleed_counterexample()
+        self.assertEqual(counter["verdict"], "fail_no_guaranteed_touch_safe_decay")
+        self.assertGreater(counter["voltage_after_2s_without_specified_bleed_v"], 1000.0)
+
+    def test_default_bleeders_pass_normal_and_single_fault_gates(self) -> None:
+        summary = hv_discharge_summary()
+        self.assertTrue(summary["all_nodes_pass_normal_60v"])
+        self.assertTrue(summary["all_nodes_pass_single_fault_120v"])
+        transfer = next(n for n in summary["nodes"] if n["name"] == "TRANSFER_ROLLER_OUTPUT")
+        self.assertLess(transfer["voltage_after_2s_single_fault_v"], 120.0)
+
+    def test_too_large_single_bleeder_fails_high_capacitance_node(self) -> None:
+        bad = evaluate_node(HVNode("BAD_BIG_CAP", 2500.0, 10.0, 100.0))
+        self.assertFalse(bad["passes_single_fault_120v_gate"])
+
+
+class EnvironmentDeratingTests(unittest.TestCase):
+    def test_humidity_sensitive_toner_loses_charge_at_80rh(self) -> None:
+        self.assertAlmostEqual(toner_q_over_m_uc_g(20.0), -80.0)
+        self.assertAlmostEqual(toner_q_over_m_uc_g(80.0), -57.0)
+        humid = evaluate_environment(EnvironmentCase("humid", 80.0, "plain", 8.0))
+        self.assertLess(humid["charge_factor_vs_50rh"], 0.86)
+        self.assertNotEqual(humid["verdict"], "run_nominal_with_logged_environment")
+
+    def test_environment_summary_forces_humid_plain_calibration(self) -> None:
+        summary = environment_summary()
+        self.assertTrue(summary["humid_plain_requires_calibration"])
+        film = next(c for c in summary["cases"] if c["name"] == "humid_80rh_film_or_label")
+        self.assertGreaterEqual(film["open_loop_transfer_center_v_before_impedance_sniff"], 1800.0)
+
+
+class EmissionsContainmentTests(unittest.TestCase):
+    def test_fan_filter_only_does_not_solve_high_emitter(self) -> None:
+        summary = emissions_summary()
+        self.assertTrue(summary["fan_filter_only_is_not_enough_for_high_emitter"])
+        self.assertTrue(summary["output_tray_capture_changes_verdict"])
+
+    def test_capture_efficiency_changes_modeled_concentration(self) -> None:
+        naked = evaluate_emission_case(EmissionCase("naked", 1.0e12))
+        captured = evaluate_emission_case(EmissionCase("captured", 1.0e12, source_capture_efficiency=0.90, output_tray_capture_efficiency=0.09))
+        self.assertGreater(naked["modeled_steady_state_particles_per_m3"], captured["modeled_steady_state_particles_per_m3"] * 50.0)
+        self.assertTrue(captured["passes_internal_review_threshold"])
+
+
+class RegistrationEdgeBudgetTests(unittest.TestCase):
+    def test_5120_bar_has_less_than_one_mm_edge_slack(self) -> None:
+        summary = registration_summary()
+        self.assertFalse(summary["current_5120_bar"]["passes_1mm_each_side_slack_goal"])
+        self.assertLess(summary["current_5120_bar"]["lateral_slack_each_side_mm"], 0.40)
+        self.assertGreater(summary["old_test_plan_plus_minus_1mm"]["error_lines"], 23.0)
+
+    def test_5184_pixel_bar_is_byte_aligned_slack_fix(self) -> None:
+        target = EngineTargets()
+        min_px = minimum_pixels_for_lateral_slack(target, 1.0)
+        self.assertGreater(min_px, 5120)
+        self.assertEqual(round_up_to_byte_aligned_pixels(min_px), 5184)
+        proposed = registration_summary()["recommended_revG_LED_or_margins"]
+        self.assertGreater(proposed["proposed_lateral_slack_each_side_mm"], 1.0)
 
 
 if __name__ == "__main__":

@@ -36,10 +36,12 @@ The OpenFrame process cartridge is a new module. It is not authenticated by a ch
 | Toner particle size | 6-8 µm |
 | Dense black laydown | 0.55 mg/cm² |
 | Office page coverage assumption | 5% |
-| Calculated toner per 5% Letter page | 0.033 g |
-| First 80 g hopper theoretical yield at 5% | about 2400 pages |
+| Calculated toner per 5% Letter page | 0.0166 g developed to paper |
+| Naive 80 g upper bound at 5% | about 4800 pages, explicitly not rated |
+| Loss-adjusted 80 g rating target | about 4000 pages |
+| Waste cavity requirement | at least 28 cm³ with margin |
 
-The calculated yield is a physics estimate, not a marketing claim. Real yield will be lower after waste toner, calibration pages, cleaning cycles, and density choices.
+The calculated yield is a mass-balance estimate, not a marketing claim. The active consumables number comes from `out/v2_toner_mass_balance.json` and `out/v2_toner_artifact_consistency.json`, not this prose table. It includes transfer loss and hopper residual; calibration pages, cleaning cycles, density choices, and third-party toner behavior must be reported as uncertainty rather than used as lockout logic.
 
 ## Contact layout
 

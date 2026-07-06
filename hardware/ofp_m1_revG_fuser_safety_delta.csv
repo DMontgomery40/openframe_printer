@@ -1,0 +1,5 @@
+subsystem,requirement,value,source_artifact,notes
+Fuser safety,independent thermostat,required in heater energy path,out/v2_fuser_thermal_safety.json,not firmware mediated
+Fuser safety,one-shot thermal fuse,required in heater energy path,out/v2_fuser_thermal_safety.json,non-reset abnormal runaway backup
+Fuser safety,thermistor,analog feedback required,out/v2_fuser_thermal_safety.json,control sensor is not the safety cutoff
+Fuser safety,cutoff-loop sensing,optically isolated preferred,docs/53_revG_new_hypotheses.md,must not backfeed or defeat cutoff path

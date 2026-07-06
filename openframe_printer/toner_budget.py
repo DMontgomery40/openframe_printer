@@ -97,6 +97,45 @@ def toner_mass_balance(target: EngineTargets | None = None,
     }
 
 
+def toner_artifact_consistency(target: EngineTargets | None = None,
+                               assume: TonerAssumptions | None = None) -> dict:
+    """Gate Rev E's remaining doc/artifact drift in the base design calcs.
+
+    Rev E correctly added a loss-adjusted mass-balance artifact, but the base
+    `v2_design_calcs.json` still emitted the old ~4800-page number under an
+    unqualified name. Rev F leaves the upper-bound math available only under a
+    name that says exactly what it ignores.
+    """
+    from .engine_math import design_calcs
+
+    calcs = design_calcs(target)
+    balance = toner_mass_balance(target, assume)
+    retired_key = "first_prototype_prints_per_80g_toner_at_5pct"
+    naive_key = "naive_upper_bound_prints_per_80g_toner_at_5pct_ignores_transfer_and_residual_losses"
+    checks = {
+        "retired_unqualified_4800_page_key_absent": retired_key not in calcs,
+        "naive_upper_bound_key_is_explicitly_labeled": naive_key in calcs,
+        "design_calcs_declares_retired_key_removed": calcs.get("retired_unqualified_prints_per_80g_key_removed") is True,
+        "loss_adjusted_rating_is_lower_than_naive_upper_bound": (
+            balance["rated_pages_at_coverage"] < calcs.get(naive_key, 0.0)
+        ),
+        "loss_adjusted_rating_is_doc_near_4000": 3500.0 <= balance["rated_pages_at_coverage"] <= 4300.0,
+    }
+    return {
+        "revision": "M1-REV-F",
+        "retired_key": retired_key,
+        "explicit_naive_upper_bound_key": naive_key,
+        "naive_upper_bound_pages": calcs.get(naive_key),
+        "loss_adjusted_pages": balance["rated_pages_at_coverage"],
+        "checks": checks,
+        "all_checks_pass": all(checks.values()),
+        "failure_meaning": (
+            "If this fails, toner yield has split again between generated artifacts; "
+            "do not publish a consumables claim until the base calcs and mass balance agree."
+        ),
+    }
+
+
 if __name__ == "__main__":
     import json
     print(json.dumps(toner_mass_balance(), indent=2))

@@ -1,0 +1,5 @@
+subsystem,requirement,value,source_artifact,notes
+LED bar optics,MTF at OPC plane,>=0.35 at 12 lp/mm,out/v2_optical_mtf_budget.json,600 dpi Nyquist is 11.81 lp/mm
+LED bar optics,equivalent Gaussian spot FWHM,<=45 um,out/v2_optical_mtf_budget.json,RFQ shortcut if MTF not directly supplied
+LED bar optics,one-pixel crosstalk,<=15%,out/v2_optical_mtf_budget.json,prevents broad spot smear despite correct emitter count
+LED bar acceptance,test target,slanted-edge or supplier MTF report,docs/51_revG_ledbar_optical_mtf.md,final method must be repeatable

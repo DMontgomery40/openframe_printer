@@ -34,7 +34,20 @@ required = [
     "out/v2_ofp1_transport_budget.json",
     "out/v2_interlock_fault_analysis.json",
     "out/v2_halftone_printability.json",
+    "out/v2_halftone_floor_gate.json",
     "out/v2_toner_mass_balance.json",
+    "out/v2_toner_artifact_consistency.json",
+    "out/v2_fuser_power_balance.json",
+    "out/v2_led_thermal_feedforward.json",
+    "out/v2_ofp1_realtime_spool.json",
+    "out/v2_motion_registration_budget.json",
+    "out/v2_optical_mtf_budget.json",
+    "out/v2_fuser_thermal_safety.json",
+    "out/v2_registration_edge_budget.json",
+    "out/v2_emissions_containment.json",
+    "out/v2_environment_derating.json",
+    "out/v2_hv_discharge_bleed.json",
+    "out/v2_erase_ghost_budget.json",
 ]
 for rel in required:
     p = ROOT / rel
@@ -59,6 +72,9 @@ assert calcs["led_pixels"] == 5120
 assert calcs["led_line_payload_bytes"] == 640
 assert 39.0 < calcs["drum_rpm"] < 40.0
 assert 80.0 < calcs["fuser_nip_dwell_ms"] < 81.5
+assert "first_prototype_prints_per_80g_toner_at_5pct" not in calcs
+assert "naive_upper_bound_prints_per_80g_toner_at_5pct_ignores_transfer_and_residual_losses" in calcs
+assert calcs["retired_unqualified_prints_per_80g_key_removed"] is True
 
 exposure = json.loads((ROOT / "out/v2_exposure_summary.json").read_text(encoding="utf-8"))
 assert exposure["recommended_shift_clock_mhz_revB"] == 20.0
@@ -158,7 +174,7 @@ assert "| PCR charge | -720 V" not in hv_doc
 assert "Primary charge roller | -720 V" not in rfq_cart
 assert "charge roller reaches -720 V" not in rfq_cart
 assert "ofp_m1_revC_hv_bias_channels.csv" not in next_doc
-assert "48 tests" in readme
+assert "78 tests" in readme
 
 # Rev E: OFP1 transport budget must state the honest USB verdict.
 ofp1 = json.loads((ROOT / "out/v2_ofp1_transport_budget.json").read_text(encoding="utf-8"))
@@ -166,24 +182,97 @@ assert ofp1["worst_case_required_mbit_s"] < ofp1["usb_fs_bulk_ceiling_mbit_s"]
 assert ofp1["usb_fs_is_marginal"] is True
 assert ofp1["ring_buffer_covers_hiccup"] is True
 
-# Rev E: interlock chain as documented is NOT single-fault safe; the dual-chain fix is.
+# Rev E/F: interlock chain as documented is NOT single-fault safe; Rev E's dual chain
+# survives independent electrical faults, but Rev F catches the common-cause actuator gap.
 faults = json.loads((ROOT / "out/v2_interlock_fault_analysis.json").read_text(encoding="utf-8"))
 assert faults["topology_a_as_documented"]["verdict_single_fault_safe"] is False
 assert faults["topology_b_rev_e_proposal"]["verdict_single_fault_safe"] is True
 assert faults["topology_b_rev_e_proposal"]["double_fault_violation_count"] > 0
+assert faults["topology_b_rev_e_with_mechanical_common_cause"]["verdict_single_fault_safe_with_common_cause"] is False
+assert faults["topology_c_rev_f_diverse_energy_path"]["verdict_single_fault_safe_with_common_cause"] is True
 
-# Rev E: default screen must be EP-safe, dispersed comparators must fail the lint.
+# Rev E/F: default screen must be EP-safe, dispersed comparators must fail the lint,
+# and the Rev E partial-seed floor bug must stay reproduced/fixed.
 screen = json.loads((ROOT / "out/v2_halftone_printability.json").read_text(encoding="utf-8"))
 assert screen["seeded_screen_ep_safe"] is True
 assert screen["worst_isolated_px_error_diffusion"] > 100
 assert screen["worst_isolated_px_bayer_dispersed"] > 100
+floor = json.loads((ROOT / "out/v2_halftone_floor_gate.json").read_text(encoding="utf-8"))
+assert floor["revE_raw_screen_bug_reproduced"] is True
+assert floor["revF_screen_passes_floor_gate"] is True
 
 # Rev E: toner yield is loss-adjusted, and the retired 2400-page doc claim stays dead.
 toner = json.loads((ROOT / "out/v2_toner_mass_balance.json").read_text(encoding="utf-8"))
 assert 3500.0 < toner["rated_pages_at_coverage"] < toner["naive_pages_ignoring_losses"]
 assert toner["required_waste_cavity_cm3_with_margin"] > 20.0
 consumables_doc = (ROOT / "docs/25_open_consumables_spec.md").read_text(encoding="utf-8")
+cartridge_doc = (ROOT / "docs/17_process_cartridge_mechanics.md").read_text(encoding="utf-8")
 assert "about 2400 pages" not in consumables_doc
+assert "about 2400 pages" not in cartridge_doc
 assert "v2_toner_mass_balance.json" in consumables_doc
+assert "Loss-adjusted 80 g rating target" in cartridge_doc
+toner_consistency = json.loads((ROOT / "out/v2_toner_artifact_consistency.json").read_text(encoding="utf-8"))
+assert toner_consistency["all_checks_pass"] is True
+assert toner_consistency["loss_adjusted_pages"] < toner_consistency["naive_upper_bound_pages"]
+
+fuser_power = json.loads((ROOT / "out/v2_fuser_power_balance.json").read_text(encoding="utf-8"))
+nominal_fuser = next(c for c in fuser_power["cases"] if c["case"] == "75gsm_plain_nominal")
+assert nominal_fuser["passes_steady_margin_gate"] is False
+assert nominal_fuser["required_heater_w_for_margin"] > nominal_fuser["heater_power_w"]
+
+led_thermal = json.loads((ROOT / "out/v2_led_thermal_feedforward.json").read_text(encoding="utf-8"))
+assert led_thermal["compensation_bounded"] is True
+assert abs(led_thermal["worst_compensated_latent_error_v"]) < 0.1
+
+# Rev G: correctness of frames is not enough; real-time streaming needs a larger buffer or HS.
+realtime = json.loads((ROOT / "out/v2_ofp1_realtime_spool.json").read_text(encoding="utf-8"))
+assert realtime["revE_pause_tolerance_ms"] < 25.0
+assert realtime["required_buffer_bytes_for_100ms_pause"] > realtime["revE_32_line_ring_buffer_bytes"] * 4
+rt_cases = {c["case"]: c for c in realtime["cases"]}
+assert rt_cases["revE_32_line_ring_10ms_target_only"]["can_finish_streaming_without_underrun"] is False
+assert rt_cases["usb_fs_75pct_worst_case_12ppm_no_margin"]["can_finish_streaming_without_underrun"] is False
+assert rt_cases["usb_hs_12ppm_128KiB_ring_passes_100ms"]["can_finish_streaming_without_underrun"] is True
+
+motion_reg = json.loads((ROOT / "out/v2_motion_registration_budget.json").read_text(encoding="utf-8"))
+assert motion_reg["open_loop_cases"][1]["page_scale_error_lines"] > 30.0
+assert motion_reg["encoder_options"][1]["passes_quarter_line_quantization_gate"] is False
+assert motion_reg["recommended_encoder"]["passes_quarter_line_quantization_gate"] is True
+
+optics = json.loads((ROOT / "out/v2_optical_mtf_budget.json").read_text(encoding="utf-8"))
+assert 45.0 < optics["max_gaussian_spot_fwhm_um_for_mtf_gate"] < 47.0
+opt_cases = {c["spot_fwhm_um"]: c for c in optics["cases"]}
+assert opt_cases[45.0]["passes_revG_optical_gate"] is True
+assert opt_cases[50.0]["passes_revG_optical_gate"] is False
+
+fuser_safety = json.loads((ROOT / "out/v2_fuser_thermal_safety.json").read_text(encoding="utf-8"))
+assert fuser_safety["topology_firmware_only"]["verdict_single_fault_safe"] is False
+assert fuser_safety["topology_firmware_only"]["single_fault_violation_count"] == 3
+assert fuser_safety["topology_revG_thermostat_plus_one_shot_fuse"]["verdict_single_fault_safe"] is True
+
+
+# Rev G-plus: erase, stored HV discharge, environment, emissions, and edge-slack gates.
+erase = json.loads((ROOT / "out/v2_erase_ghost_budget.json").read_text(encoding="utf-8"))
+assert erase["pre_revG_as_documented"]["verdict"] == "fail_ghost_memory_gate"
+assert erase["revG_requirement"]["passes_energy_window"] is True
+assert 93.0 < erase["ghost_test_pattern"]["predicted_repeat_distance_mm"] < 95.0
+
+hv_bleed = json.loads((ROOT / "out/v2_hv_discharge_bleed.json").read_text(encoding="utf-8"))
+assert hv_bleed["counterexample_no_bleeder"]["verdict"] == "fail_no_guaranteed_touch_safe_decay"
+assert hv_bleed["all_nodes_pass_normal_60v"] is True
+assert hv_bleed["all_nodes_pass_single_fault_120v"] is True
+
+env = json.loads((ROOT / "out/v2_environment_derating.json").read_text(encoding="utf-8"))
+assert env["humid_plain_requires_calibration"] is True
+assert env["film_offset_v"] == 500.0
+assert next(c for c in env["cases"] if c["name"] == "humid_80rh_plain")["charge_factor_vs_50rh"] < 0.86
+
+emissions = json.loads((ROOT / "out/v2_emissions_containment.json").read_text(encoding="utf-8"))
+assert emissions["fan_filter_only_is_not_enough_for_high_emitter"] is True
+assert emissions["output_tray_capture_changes_verdict"] is True
+
+edge = json.loads((ROOT / "out/v2_registration_edge_budget.json").read_text(encoding="utf-8"))
+assert edge["current_5120_bar"]["passes_1mm_each_side_slack_goal"] is False
+assert edge["recommended_revG_LED_or_margins"]["proposed_led_pixels"] == 5184
+assert edge["old_test_plan_plus_minus_1mm"]["error_lines"] > 23.0
 
 print("smoke_test: OK")

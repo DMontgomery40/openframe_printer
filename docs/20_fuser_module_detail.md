@@ -28,7 +28,7 @@ The heater enable must pass through all of these, in hardware:
 5. One-shot thermal fuse.
 6. Heater element.
 
-Firmware controls normal temperature. Hardware prevents runaway when firmware is wrong.
+Firmware controls normal temperature. Hardware prevents runaway when firmware is wrong. Rev G makes this executable in `out/v2_fuser_thermal_safety.json`: firmware-only control has three modeled single-fault runaway paths, while thermostat plus one-shot fuse has zero modeled single-fault violations.
 
 ## Thermal model
 
@@ -51,3 +51,16 @@ This model is only a first-order sizing model. The actual module needs thermisto
 - Connector includes heater line, heater neutral, thermistor pair, thermostat loop, thermal fuse loop, tach, and PE bond.
 - The printer refuses to energize the fuser if thermistor reading is implausible.
 - A blown thermal fuse marks the fuser module as service-required.
+
+
+## Rev G runaway fault gate
+
+The fuser acceptance suite must run the fault cases from `out/v2_fuser_thermal_safety.json` before any unattended heat test:
+
+- thermistor stuck cold,
+- firmware output stuck on,
+- SSR/relay welded on,
+- thermostat welded closed,
+- thermal fuse bypassed/open.
+
+The heater must not remain energized above the fault temperature under any single modeled fault.

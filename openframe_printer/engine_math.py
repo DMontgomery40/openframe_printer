@@ -134,7 +134,8 @@ def design_calcs(target: EngineTargets | None = None) -> dict:
         "fuser_nip_dwell_ms": fuser_dwell_ms(t),
         "toner_per_letter_page_5pct_coverage_g": dense_black_toner_per_page_g(t, 0.05),
         "toner_per_letter_page_100pct_solid_g": dense_black_toner_per_page_g(t, 1.0),
-        "first_prototype_prints_per_80g_toner_at_5pct": 80.0 / dense_black_toner_per_page_g(t, 0.05),
+        "naive_upper_bound_prints_per_80g_toner_at_5pct_ignores_transfer_and_residual_losses": 80.0 / dense_black_toner_per_page_g(t, 0.05),
+        "retired_unqualified_prints_per_80g_key_removed": True,
     }
 
 

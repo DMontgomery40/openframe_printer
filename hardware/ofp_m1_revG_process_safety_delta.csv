@@ -1,0 +1,10 @@
+subsystem,net_or_requirement,active_value,verification_artifact,notes
+erase,ERASE_LED_EN,post-cleaning erase/quench station,out/v2_erase_ghost_budget.json,location after cleaning blade before primary charge roller
+erase,ERASE_DOSE_DESIGN,0.75 uJ/cm2,out/v2_erase_ghost_budget.json,required model dose 0.5698 uJ/cm2 to reach -80 V target
+hv,TRANSFER_ROLLER_OUTPUT_BLEED,2x100 Mohm,out/v2_hv_discharge_bleed.json,passes 60 V normal and 120 V single-fault 2 s gates
+hv,PCR_DC_OUTPUT_OPTION_A_BLEED,2x100 Mohm,out/v2_hv_discharge_bleed.json,passes 60 V normal and 120 V single-fault 2 s gates
+hv,PCR_AC_PEAK_OUTPUT_OPTION_B_BLEED,2x150 Mohm,out/v2_hv_discharge_bleed.json,passes 60 V normal and 120 V single-fault 2 s gates
+hv,DEVELOPER_BIAS_OUTPUT_BLEED,2x220 Mohm,out/v2_hv_discharge_bleed.json,passes 60 V normal and 120 V single-fault 2 s gates
+environment,HUMIDITY_SENSOR_OR_LOGGER,required near cartridge/outlet,out/v2_environment_derating.json,80 percent RH plain paper holds quality run until calibration sweep
+emissions,FUSER_EXIT_CAPTURE,negative-pressure captured path,out/v2_emissions_containment.json,fan filter alone fails high-emitter modeled case
+registration,LED_ACTIVE_PIXELS_RECOMMENDED,5184,out/v2_registration_edge_budget.json,5120 px gives only 0.373 mm per-side slack on Letter

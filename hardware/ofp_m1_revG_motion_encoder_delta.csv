@@ -1,0 +1,5 @@
+subsystem,signal_or_part,requirement,source_artifact,notes
+Drum motion,drum encoder,4096 CPR quadrature minimum,out/v2_motion_registration_budget.json,2048 CPR without interpolation misses quarter-line gate
+Drum motion,line clock,encoder-slaved,out/v2_motion_registration_budget.json,firmware line timer follows measured drum phase
+Registration,lead-edge sensor,timestamped edge <=150 us jitter,out/v2_motion_registration_budget.json,polling loop is not adequate for phase capture
+Firmware,motion residual log,store per-page residual spectrum,docs/53_revG_new_hypotheses.md,enables H12 drum health map test

@@ -1,0 +1,7 @@
+subsystem,revA_or_revE_assumption,revF_requirement,reason,generated_gate
+cover_interlock,one cover switch in single loop,dual contacts plus physically diverse energy separator,single-loop has stuck-at single-point failures,out/v2_interlock_fault_analysis.json
+revE_dual_chain,two contacts per door feeding logic and energy-path relay,keep dual contacts but add door-open energy separator,shared actuator can make both contacts read closed,out/v2_interlock_fault_analysis.json
+service_panel,one NC contact in loop,chain A contact plus chain B contact plus energy separator,same common-cause actuator risk,out/v2_interlock_fault_analysis.json
+rear_door,one NC contact in loop,chain A contact plus chain B contact plus energy separator,same common-cause actuator risk,out/v2_interlock_fault_analysis.json
+firmware_request_lines,firmware requests gated by interlock loop,firmware requests gated and still defeated by energy path,adversarial firmware is part of the fault model,out/v2_interlock_fault_analysis.json
+fault_reporting,loop open only,chain disagreement and energy auxiliary sense must latch service fault,detect first fault before a second fault creates hazard,out/v2_interlock_fault_analysis.json
