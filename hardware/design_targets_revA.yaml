@@ -1,0 +1,66 @@
+product: OpenFrame M1
+revision: newbuild-v2-revA
+is_donor_printer_conversion: false
+technology: monochrome_dry_electrophotographic_led
+primary_goal: new modular repairable local-first printer platform
+media:
+  supported: [letter, a4]
+  paper_weight_gsm: [60, 105]
+  tray_capacity_sheets_80gsm: 250
+image:
+  dpi: 600
+  mono_bits_per_pixel: 1
+  page_width_mm: 216.0
+  led_pixels: 5120
+  led_pitch_um: 42.333333
+  led_active_width_mm: 216.746667
+speed:
+  letter_ppm: 12
+  inter_page_gap_mm: 30.6
+  process_speed_mm_s_letter: 62.0
+engine:
+  opc_drum_diameter_mm: 30.0
+  opc_drum_circumference_mm: 94.24778
+  opc_drum_rpm_at_12ppm: 39.470
+  primary_charge_roller_diameter_mm: 10.0
+  developer_roller_diameter_mm: 16.0
+  transfer_roller_diameter_mm: 14.0
+  toner_particle_size_um: [6, 8]
+  dense_black_toner_laydown_mg_cm2: 0.55
+exposure:
+  type: stationary_led_printbar
+  wavelength_nm_initial: 780
+  nominal_exposure_uJ_cm2: 0.45
+  calibration_sweep_uJ_cm2: [0.15, 0.25, 0.35, 0.45, 0.60, 0.80, 1.00]
+  line_payload_bytes: 640
+  recommended_shift_clock_mhz: 20.0
+hv_biases:
+  # REV D WARNING: these Rev A PCR values are historical/retired.
+  # Active HV values are generated from openframe_printer/hv_model.py and
+  # exported to hardware/ofp_m1_revD_hv_bias_channels.csv and out/v2_hv_bias_channels.json.
+  pcr_charge_v_nominal: -720
+  pcr_charge_v_range: [-500, -900]
+  developer_bias_v_nominal: -320
+  developer_bias_v_range: [-150, -500]
+  transfer_v_nominal: 1600
+  transfer_v_range: [700, 2500]
+  channel_current_limit_uA: [200, 300, 500]
+fuser:
+  hot_roller_diameter_mm: 24.0
+  pressure_roller_diameter_mm: 24.0
+  nip_width_mm: 5.0
+  nip_dwell_ms_at_12ppm: 80.645
+  nominal_surface_temp_c: 178
+  print_enable_surface_temp_c: 160
+  warning_surface_temp_c: 195
+  fault_surface_temp_c: 205
+  heater_power_w_initial: 800
+safety:
+  required_hardware_interlocks: [cover_closed_loop, estop_loop, thermal_fuse_continuity, thermostat_closed, watchdog_ok]
+  hardware_gated_outputs: [hv_enable, led_oe, fuser_heater_enable, main_motor_enable]
+  no_live_open_service_mode_default: true
+  first_rig_energizes_hv: false
+  first_rig_energizes_fuser: false
+host:
+  external_protocols: [IPP, AirPrint, Mopria]
+  internal_protocol: OFP1

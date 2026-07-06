@@ -1,0 +1,10 @@
+input_condition,hv_enable,led_oe,fuser_heater_enable,main_motor_enable,firmware_can_override,safe_state
+cover_closed_loop_open,off,off,off,off,no,all hazardous outputs off
+estop_loop_open,off,off,off,off,no,all hazardous outputs off
+thermal_fuse_open,off,off,off,on_for_cooling_only,no,fuser disabled service required
+thermostat_open,off,off,off,on_for_cooling_only,no,fuser disabled until cool and service checked
+mcu_watchdog_failed,off,off,off,off,no,hardware watchdog removes enables
+hv_fault_asserted,off,off,off,on_for_paper_clear_only,no,hv disabled and page moved to safe exit if possible
+fuser_temp_over_205c,off,off,off,on_for_cooling_only,no,heater disabled fans on
+paper_jam_detected,off,off,off,controlled_stop,no,stop imaging and heat safely
+service_door_open,off,off,off,off,no,no live open service mode in default firmware

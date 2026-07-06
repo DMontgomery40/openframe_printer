@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360">
+  <title>OpenFrame M1 Rev A open process cartridge concept</title>
+  <style>text { font-family: Arial, sans-serif; font-size: 13px; } .a { fill: none; stroke: #111; stroke-width: 2; } .b { fill: none; stroke: #111; stroke-width: 1; }</style>
+  <rect class="a" x="50" y="45" width="710" height="260" rx="8"/>
+  <text x="60" y="30">Open process cartridge: replaceable OPC drum, developer roller, doctor blade, waste toner path, toner hopper</text>
+  <circle class="a" cx="390" cy="180" r="72"/>
+  <text x="360" y="184">OPC drum</text>
+  <text x="345" y="202">Ø30 mm</text>
+  <circle class="a" cx="245" cy="190" r="38"/>
+  <text x="190" y="246">developer roller Ø16 mm</text>
+  <rect class="b" x="125" y="90" width="165" height="68" rx="4"/>
+  <text x="150" y="128">toner hopper</text>
+  <line class="a" x1="280" y1="145" x2="315" y2="155"/>
+  <text x="245" y="118">doctor blade gap sweep 80-180 µm</text>
+  <circle class="a" cx="390" cy="72" r="24"/>
+  <text x="420" y="78">primary charge roller Ø10 mm</text>
+  <circle class="a" cx="515" cy="205" r="34"/>
+  <text x="550" y="210">transfer roller Ø14 mm</text>
+  <rect class="b" x="315" y="275" width="150" height="20" rx="3"/>
+  <text x="320" y="326">waste toner auger channel</text>
+  <text x="60" y="326">Target toner: 6-8 µm black polymerized toner, dense black laydown 0.55 mg/cm².</text>
+</svg>

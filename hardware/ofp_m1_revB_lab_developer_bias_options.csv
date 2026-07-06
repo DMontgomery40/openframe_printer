@@ -1,0 +1,5 @@
+channel,polarity,initial_range_v,current_limit_uA,lab_connector_contact,purpose,production_status
+DEV_ROLLER_BIAS,negative,-150 to -500,300,J8_PROCESS_CONTACTS_2,Primary developer roller field for latent-image development,required
+DEV_BLADE_BIAS,negative,-300 to -900,100,J8B_LAB_DEV_1,Regulating blade charge-shaping rail for q/m and fog experiments,lab_only_optional
+TONER_SUPPLY_BIAS,negative,-500 to -800,100,J8B_LAB_DEV_2,Toner supply roller rail for toner-mass and supply-stability experiments,lab_only_optional
+DEV_GUARD_RETURN,0V,0,50,J8B_LAB_DEV_3,Guard/return reference for lab-only developer sub-bias measurements,lab_only_optional

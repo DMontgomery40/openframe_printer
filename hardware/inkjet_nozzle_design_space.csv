@@ -1,0 +1,15 @@
+parameter,rev0_target,lower_bound,upper_bound,unit,notes
+pixel_pitch_600dpi,42.333,42.333,42.333,um,Nozzle pitch for native 600 dpi single row
+pixel_pitch_1200dpi,21.167,21.167,21.167,um,Future dense array pitch target
+nozzle_diameter,24,18,30,um,Starting piezo DOD nozzle orifice
+nozzle_plate_thickness,25,15,40,um,Thin enough to reduce wetting drag; thick enough to fabricate
+chamber_length,55,40,80,um,Piezo chamber length
+chamber_width,45,35,70,um,Piezo chamber width
+chamber_height,28,20,40,um,Piezo chamber height
+drop_volume,10,4,20,pL,Office text target; photo would need lower and multiple drop sizes
+drop_velocity,7,5,10,m/s,Enough velocity for placement without excessive satellites
+fire_frequency,12000,6000,20000,Hz,Per nozzle target before thermal/fluid limits dominate
+ink_viscosity,3,2,5,mPa_s,Water-based ink target window
+surface_tension,32,28,40,mN_m,Ink target window with surfactant control
+capping_gap,0.5,0.2,1.0,mm,Cap-to-nozzle seal design target
+purge_pump_pressure,35,15,60,kPa,Cleaning cycle design target

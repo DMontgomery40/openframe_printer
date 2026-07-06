@@ -1,0 +1,11 @@
+sensor,physical_position_mm_from_tray_lip,type,logic_active,used_for,fault_condition
+TRAY_PRESENT,0,microswitch,low,refuse feed if tray absent,tray opens during print
+PAPER_PRESENT,5,reflective optical,low,refuse feed if no paper,no paper at pickup command
+PRE_REG_SENSOR,88,interrupt optical,low,lead edge before registration,jam if not hit within late window
+IMAGE_SYNC_SENSOR,138,interrupt optical,low,start image timing offset to transfer nip,jam if absent after registration release
+FUSER_EXIT_SENSOR,285,interrupt optical,low,confirm sheet exits fuser,jam if not hit within late window
+EXIT_SENSOR,340,interrupt optical,low,confirm sheet exits printer,jam if paper remains after job
+COVER_CLOSED_LOOP,frame,dual microswitch loop,closed,hardware enables hot/HV/light outputs,any open forces outputs off
+FUSER_THERMISTOR,hot roller,10k NTC analog,n/a,PID control,open/short/out of range faults
+FUSER_THERMOSTAT,fuser frame,bimetal closed loop,closed,independent overtemp cutoff,open forces heater off
+THERMAL_FUSE,fuser body,one-shot fuse closed loop,closed,last resort overtemp cutoff,open forces heater off until serviced

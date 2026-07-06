@@ -1,0 +1,26 @@
+net_name	source	destination	voltage_domain	notes
+AC_L_IN	J1_POWER_1	FUSE_F1_INPUT	mains	Fused before fuser and isolated PSU split
+AC_N_IN	J1_POWER_2	PSU_N_AND_FUSER_N	mains	Neutral routed through safety-rated connectors
+PE_CHASSIS	J1_POWER_3	FRAME_AND_FUSER_BODY	chassis	Protective earth bond
+PLUS_24V_MOTOR	LVPSU_24V_MOTOR	MOTOR_DRIVERS_AND_FANS	24V	Motor power rail
+PLUS_24V_AUX	LVPSU_24V_AUX	HV_MODULE_INPUT	24V	HV module source power
+PLUS_5V_LOGIC	BUCK_5V	LED_BAR_AND_USB	5V	Logic/peripheral rail
+PLUS_3V3_LOGIC	LDO_OR_BUCK_3V3	MCU_SENSOR_DAC_ADC	3.3V	MCU logic rail
+HV_ENABLE_HW	INTERLOCK_AND_GATE_OUTPUT	J7_HV_MODULE_2	3.3V	Hardware AND of interlocks and MCU permission
+LED_OE_HW	INTERLOCK_AND_GATE_OUTPUT	J6_LED_BAR_11	3.3V	Hardware AND of interlocks and MCU permission
+FUSER_HEATER_ENABLE_HW	INTERLOCK_AND_GATE_OUTPUT	SSR_AND_RELAY_DRIVER	3.3V	Hardware AND of thermal loops and MCU permission
+PCR_DAC	DAC_CH0	J7_HV_MODULE_3	0-3.3V	Primary charge control voltage
+DEV_DAC	DAC_CH1	J7_HV_MODULE_4	0-3.3V	Developer bias control voltage
+XFER_DAC	DAC_CH2	J7_HV_MODULE_5	0-3.3V	Transfer bias control voltage
+PCR_MON	J7_HV_MODULE_6	ADC_CH0	0-3.3V	Primary charge scaled monitor
+DEV_MON	J7_HV_MODULE_7	ADC_CH1	0-3.3V	Developer scaled monitor
+XFER_MON	J7_HV_MODULE_8	ADC_CH2	0-3.3V	Transfer scaled monitor
+LED_CLK_LVDS	MCU_PIO_LVDS_DRIVER	J6_LED_BAR_3_4	LVDS	20 MHz recommended shift clock
+LED_DATA0_LVDS	MCU_PIO_LVDS_DRIVER	J6_LED_BAR_5_6	LVDS	Even pixel bitstream or lower half
+LED_DATA1_LVDS	MCU_PIO_LVDS_DRIVER	J6_LED_BAR_7_8	LVDS	Odd pixel bitstream or upper half
+LED_LATCH_LVDS	MCU_PIO_LVDS_DRIVER	J6_LED_BAR_9_10	LVDS	Latch line after 640 byte payload
+PRE_REG_SENSOR_N	J5_SENSORS_4	MCU_IRQ0	3.3V	Paper leading-edge interrupt
+IMAGE_SYNC_SENSOR_N	J5_SENSORS_5	MCU_IRQ1	3.3V	Image line zero timing interrupt
+FUSER_THERMISTOR	J9_FUSER_3	ADC_CH3	analog	NTC divider with plausibility check
+THERMOSTAT_LOOP	J9_FUSER_5	INTERLOCK_CHAIN	interlock	Series safety loop
+THERMAL_FUSE_LOOP	J9_FUSER_6	INTERLOCK_CHAIN	interlock	Series safety loop

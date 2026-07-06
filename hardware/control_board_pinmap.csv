@@ -1,0 +1,27 @@
+pin,signal,direction,domain,notes
+GP0,UART_TX,out,3V3,debug serial
+GP1,UART_RX,in,3V3,debug serial
+GP2,MOTOR_PICKUP_STEP,out,3V3,pickup stepper driver step
+GP3,MOTOR_PICKUP_DIR,out,3V3,pickup stepper direction
+GP4,MOTOR_PROCESS_STEP,out,3V3,registration/process motor step
+GP5,MOTOR_PROCESS_DIR,out,3V3,registration/process motor direction
+GP6,MOTOR_FUSER_STEP,out,3V3,fuser/exit motor step
+GP7,MOTOR_FUSER_DIR,out,3V3,fuser/exit motor direction
+GP8,MOTOR_ENABLE_N,out,3V3,global motor enable active low
+GP9,LED_DATA,out,3V3,LED line data
+GP10,LED_CLK,out,3V3,LED data clock
+GP11,LED_LATCH,out,3V3,LED line latch
+GP12,LED_LINE_STROBE,out,3V3,expose current line
+GP13,LED_OE_SAFE_REQ,out,3V3,firmware request; hardware interlock still gates output
+GP14,HV_ENABLE_REQ,out,3V3,firmware request; hardware interlock still gates HV
+GP15,HV_CHARGE_PWM,out,3V3,charge bias command to HV module
+GP16,HV_DEV_PWM,out,3V3,developer bias command to HV module
+GP17,HV_TRANSFER_PWM,out,3V3,transfer bias command to HV module
+GP18,FUSER_HEATER_REQ,out,3V3,firmware heater request; hardware thermal chain gates power
+GP19,FUSER_FAN_PWM,out,3V3,cooling fan control
+GP20,SENSOR_TRAY_PRESENT,in,3V3,paper in tray
+GP21,SENSOR_PICKUP_EXIT,in,3V3,pickup confirmation
+GP22,SENSOR_REGISTRATION,in,3V3,page timing origin
+GP26_A0,NTC_FUSER_ADC,in,analog,fuser thermistor divider
+GP27_A1,HV_FAULT_ADC,in,analog,HV health/fault monitor
+GP28_A2,COVER_LOOP_OK,in,analog/digital,hardware interlock loop monitor

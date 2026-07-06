@@ -1,0 +1,11 @@
+revision: M1-REV-A
+note: This file mirrors mechanical/mechanical_parameters_revA.yaml.
+units: mm
+frame:
+  outer_width: 390
+  outer_depth: 360
+  outer_height: 235
+rollers:
+  opc_drum_diameter: 30
+  fuser_hot_roller_diameter: 24
+  fuser_pressure_roller_diameter: 24

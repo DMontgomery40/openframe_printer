@@ -1,0 +1,8 @@
+subsystem,voltage,idle_w,active_w,peak_w,notes
+host_board,5V/USB-C,3,8,12,Linux-capable print/raster host
+engine_controller,3V3/5V,0.5,2,3,"MCU, sensors, logic"
+motors,24V,0,35,75,pickup/process/fuser/exit motors
+LED_printbar,5V/VLED,0,6,15,depends on head and duty
+HV_bias_module,24V input,0,3,8,current-limited biases
+fuser_heater,AC or dedicated heater rail,0,450,700,module dependent
+fans,24V,0.5,3,6,fuser/PSU airflow

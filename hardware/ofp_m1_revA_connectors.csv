@@ -1,0 +1,73 @@
+connector,pin,signal,voltage_domain,direction,current_or_rating,notes
+J1_POWER,1,AC_L,mains,input,10A fused,Fuser heater branch enters isolated power module only
+J1_POWER,2,AC_N,mains,input,10A fused,Fuser heater branch enters isolated power module only
+J1_POWER,3,PE,chassis,input,bonded to frame,Protective earth bonded to metal frame and fuser chassis
+J2_LVPSU,1,+24V_MOTOR,24V,output,4A,Feeds motor drivers and fans
+J2_LVPSU,2,+24V_AUX,24V,output,2A,Feeds HV module input and accessories
+J2_LVPSU,3,+5V_LOGIC,5V,output,3A,Feeds LED bar logic rail and USB service rail
+J2_LVPSU,4,+3V3_LOGIC,3.3V,output,1A,Feeds MCU and sensors
+J2_LVPSU,5,GND,0V,return,6A,Logic and low-voltage return star-routed
+J2_LVPSU,6,PSU_FAULT_N,3.3V,input,open drain,Low means PSU fault
+J3_MAIN_MOTOR,1,MAIN_MOTOR_A,24V,output,3A,Main process motor phase A or driver output A
+J3_MAIN_MOTOR,2,MAIN_MOTOR_B,24V,output,3A,Main process motor phase B or driver output B
+J3_MAIN_MOTOR,3,MAIN_ENCODER_A,3.3V,input,10mA,Quadrature encoder A
+J3_MAIN_MOTOR,4,MAIN_ENCODER_B,3.3V,input,10mA,Quadrature encoder B
+J3_MAIN_MOTOR,5,MAIN_MOTOR_FAULT_N,3.3V,input,open drain,Driver fault
+J3_MAIN_MOTOR,6,GND,0V,return,3A,Motor return
+J4_FEED_MOTORS,1,PICKUP_STEP,3.3V,output,8mA,Pickup stepper step
+J4_FEED_MOTORS,2,PICKUP_DIR,3.3V,output,8mA,Pickup stepper direction
+J4_FEED_MOTORS,3,REG_STEP,3.3V,output,8mA,Registration stepper step
+J4_FEED_MOTORS,4,REG_DIR,3.3V,output,8mA,Registration stepper direction
+J4_FEED_MOTORS,5,STEPPER_ENABLE_N,3.3V,output,8mA,Shared enable to stepper drivers
+J4_FEED_MOTORS,6,STEPPER_FAULT_N,3.3V,input,open drain,Shared stepper driver fault
+J5_SENSORS,1,+3V3_SENSOR,3.3V,output,250mA,Sensor rail after resettable fuse
+J5_SENSORS,2,TRAY_PRESENT_N,3.3V,input,10mA,Low when tray inserted
+J5_SENSORS,3,PAPER_PRESENT_N,3.3V,input,10mA,Low when tray has paper
+J5_SENSORS,4,PRE_REG_SENSOR_N,3.3V,input,10mA,Low when leading edge hits pre-registration sensor
+J5_SENSORS,5,IMAGE_SYNC_SENSOR_N,3.3V,input,10mA,Low when sheet reaches imaging sync sensor
+J5_SENSORS,6,FUSER_EXIT_SENSOR_N,3.3V,input,10mA,Low when sheet exits fuser
+J5_SENSORS,7,EXIT_SENSOR_N,3.3V,input,10mA,Low when sheet reaches output area
+J5_SENSORS,8,GND,0V,return,250mA,Sensor return
+J6_LED_BAR,1,+5V_LED,5V,output,2A,LED bar power rail switched by LED_SAFE_EN
+J6_LED_BAR,2,+3V3_LED_IO,3.3V,output,250mA,LED bar logic rail
+J6_LED_BAR,3,LED_CLK_P,LVDS,output,100ohm,Shift clock positive
+J6_LED_BAR,4,LED_CLK_N,LVDS,output,100ohm,Shift clock negative
+J6_LED_BAR,5,LED_DATA0_P,LVDS,output,100ohm,Data lane 0 positive
+J6_LED_BAR,6,LED_DATA0_N,LVDS,output,100ohm,Data lane 0 negative
+J6_LED_BAR,7,LED_DATA1_P,LVDS,output,100ohm,Data lane 1 positive
+J6_LED_BAR,8,LED_DATA1_N,LVDS,output,100ohm,Data lane 1 negative
+J6_LED_BAR,9,LED_LATCH_P,LVDS,output,100ohm,Latch positive
+J6_LED_BAR,10,LED_LATCH_N,LVDS,output,100ohm,Latch negative
+J6_LED_BAR,11,LED_OE_HW,3.3V,output,8mA,Hardware-gated LED output enable
+J6_LED_BAR,12,LED_TEMP_NTC,analog,input,0-3.3V,LED bar temperature monitor
+J6_LED_BAR,13,GND,0V,return,2A,LED return
+J6_LED_BAR,14,SHIELD,chassis,bond,low impedance,Cable shield to chassis at controller end
+J7_HV_MODULE,1,+24V_HV,24V,output,1A,Input to potted current-limited HV module
+J7_HV_MODULE,2,HV_ENABLE_HW,3.3V,output,8mA,Hardware-gated master HV enable
+J7_HV_MODULE,3,PCR_DAC,0-3.3V,output,1mA,Primary charge control
+J7_HV_MODULE,4,DEV_DAC,0-3.3V,output,1mA,Developer bias control
+J7_HV_MODULE,5,XFER_DAC,0-3.3V,output,1mA,Transfer bias control
+J7_HV_MODULE,6,PCR_MON,0-3.3V,input,1mA,Scaled PCR HV monitor
+J7_HV_MODULE,7,DEV_MON,0-3.3V,input,1mA,Scaled developer HV monitor
+J7_HV_MODULE,8,XFER_MON,0-3.3V,input,1mA,Scaled transfer HV monitor
+J7_HV_MODULE,9,HV_FAULT_N,3.3V,input,open drain,Low when HV module faults
+J7_HV_MODULE,10,GND,0V,return,1A,Low-voltage HV module return
+J8_PROCESS_CONTACTS,1,PCR_HV,-900V max,output,200uA limit,Spring contact to charge roller
+J8_PROCESS_CONTACTS,2,DEV_HV,-500V max,output,300uA limit,Spring contact to developer roller
+J8_PROCESS_CONTACTS,3,XFER_HV,+2500V max,output,500uA limit,Spring contact to transfer roller
+J8_PROCESS_CONTACTS,4,CART_ID_RES,analog,input,0-3.3V,Open resistor ID only; no authentication lockout
+J8_PROCESS_CONTACTS,5,CART_GND,0V,return,50mA,Cartridge low-voltage return for ID only
+J9_FUSER,1,FUSER_HEATER_L_SW,mains,output,10A,Series switched heater line through SSR and relay
+J9_FUSER,2,FUSER_HEATER_N,mains,return,10A,Heater neutral return
+J9_FUSER,3,FUSER_THERMISTOR_A,analog,input,0-3.3V,10k NTC divider input
+J9_FUSER,4,FUSER_THERMISTOR_B,analog,return,0V,Thermistor return
+J9_FUSER,5,THERMOSTAT_LOOP,interlock,input,closed loop,Independent thermostat contact
+J9_FUSER,6,THERMAL_FUSE_LOOP,interlock,input,closed loop,One-shot thermal fuse continuity
+J9_FUSER,7,FUSER_TACH,3.3V,input,10mA,Fuser roller tachometer
+J9_FUSER,8,PE,chassis,bond,low impedance,Fuser metalwork earth
+J10_UI,1,+3V3_UI,3.3V,output,250mA,Display/buttons rail
+J10_UI,2,I2C_SDA,3.3V,bidir,8mA,Display and front panel controller
+J10_UI,3,I2C_SCL,3.3V,output,8mA,Display and front panel controller
+J10_UI,4,BUTTON_CANCEL_N,3.3V,input,10mA,Cancel button
+J10_UI,5,STATUS_LED,3.3V,output,8mA,Front panel status LED
+J10_UI,6,GND,0V,return,250mA,UI return

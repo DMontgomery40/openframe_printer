@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420">
+  <title>OpenFrame M1 Rev A paper path / engine side view</title>
+  <style>
+    text { font-family: Arial, sans-serif; font-size: 13px; }
+    .label { font-size: 12px; }
+    .module { fill: none; stroke: #111; stroke-width: 2; }
+    .path { fill: none; stroke: #111; stroke-width: 3; }
+    .thin { fill: none; stroke: #111; stroke-width: 1; }
+  </style>
+  <rect class="module" x="35" y="55" width="830" height="290" rx="8"/>
+  <text x="45" y="40">OpenFrame M1 Rev A: 600 dpi monochrome LED electrophotographic engine, 12 ppm, process speed 62.0 mm/s</text>
+  <polyline class="path" points="65,300 150,300 230,275 320,240 430,210 560,205 675,210 790,185 835,170"/>
+  <rect class="thin" x="55" y="286" width="120" height="42" rx="4"/>
+  <text class="label" x="68" y="312">250-sheet tray</text>
+  <circle class="module" cx="150" cy="280" r="18"/>
+  <text class="label" x="125" y="250">pickup Ø18</text>
+  <circle class="module" cx="250" cy="255" r="12"/>
+  <text class="label" x="220" y="232">registration Ø12</text>
+  <rect class="module" x="315" y="110" width="245" height="140" rx="5"/>
+  <text class="label" x="330" y="130">open process cartridge</text>
+  <circle class="module" cx="445" cy="190" r="36.0"/>
+  <text class="label" x="415" y="190">OPC drum Ø30</text>
+  <rect class="module" x="330" y="95" width="215" height="22" rx="3"/>
+  <text class="label" x="350" y="91">5120-pixel LED bar, 780 nm</text>
+  <circle class="thin" cx="392" cy="198" r="20"/>
+  <text class="label" x="342" y="230">developer</text>
+  <circle class="thin" cx="445" cy="142" r="14"/>
+  <text class="label" x="455" y="145">PCR</text>
+  <circle class="thin" cx="497" cy="210" r="16"/>
+  <text class="label" x="505" y="232">transfer</text>
+  <rect class="module" x="605" y="138" width="122" height="112" rx="6"/>
+  <circle class="module" cx="650" cy="185" r="24"/>
+  <circle class="module" cx="690" cy="212" r="24"/>
+  <text class="label" x="617" y="130">fuser module 178°C</text>
+  <text class="label" x="620" y="268">nip 5.0 mm / dwell 80.6 ms</text>
+  <circle class="module" cx="790" cy="170" r="16"/>
+  <text class="label" x="760" y="145">exit roller</text>
+  <line class="thin" x1="445" y1="95" x2="445" y2="160"/>
+  <text class="label" x="455" y="108">expose charged drum</text>
+  <text class="label" x="52" y="368">All hot/HV/light-emitting modules are behind hardware interlocks. This drawing is a geometry contract, not a certification.</text>
+</svg>

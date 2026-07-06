@@ -1,0 +1,7 @@
+motor_or_actuator,nominal_voltage_v,type,controlled_axis,nominal_surface_speed_mm_s,roller_diameter_mm,calculated_rpm,driver_feedback
+MAIN_PROCESS_MOTOR,24,BLDC_with_encoder,OPC drum developer transfer synchronized shaft,62.0,30.0,39.470,quadrature encoder plus driver fault
+PICKUP_STEPPER,24,bipolar_stepper,pickup roller feed burst,62.0,18.0,65.783,stepper fault plus paper sensor confirmation
+REGISTRATION_STEPPER,24,bipolar_stepper,deskew and timed release,62.0,12.0,98.676,stepper fault plus image sync sensor
+FUSER_MOTOR,24,BLDC_or_stepper,fuser hot/pressure roller pair,62.0,24.0,49.338,tachometer plus exit sensor
+EXIT_STEPPER,24,bipolar_stepper,output roller,62.0,16.0,74.007,stepper fault plus exit sensor
+TONER_AGITATOR,24,DC_gearmotor,toner hopper agitation,slow intermittent,n/a,n/a,current limit fault

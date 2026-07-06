@@ -1,0 +1,5 @@
+channel,option,polarity,nominal_v,min_v,max_v,ac_component_kvpp,ac_frequency_khz,current_limit_uA,ramp_v_per_s,control_signal,monitor_signal,output_contact,rationale
+PCR_CHARGE,A_dc_only,negative,-1180,-900,-1400,0,0,200,400,PCR_DAC,PCR_MON,J8_PROCESS_CONTACTS_1,DC contact charging starts only above the air-gap threshold; a -600 V drum surface needs roughly |V0| + Vth. Rev A -720 V is retired.
+PCR_CHARGE,B_ac_dc,negative,-600,-450,-750,1.7,1.5,200,400,PCR_DAC_PLUS_AC_STAGE,PCR_MON,J8_PROCESS_CONTACTS_1,AC+DC charging: 1.3 kVpp is the threshold-band physics minimum; 1.7 kVpp is the build spec with headroom.
+DEVELOPER_BIAS,selected,negative,-320,-150,-500,0,0,300,200,DEV_DAC,DEV_MON,J8_PROCESS_CONTACTS_2,With a real -600 V charged surface this bias gives first-build development contrast and fog margin.
+TRANSFER_ROLLER,selected_current_limited,positive,1600,700,2500,0,0,500,500,XFER_DAC,XFER_MON,J8_PROCESS_CONTACTS_3,Voltage envelope unchanged; Rev D adds a current-limited paper-impedance sniff transfer plan.

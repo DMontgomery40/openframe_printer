@@ -1,0 +1,40 @@
+revision: M1-REV-A
+units: mm
+frame:
+  outer_width: 390
+  outer_depth: 360
+  outer_height: 235
+paper_path:
+  tray_leading_edge_home_y: 0
+  pickup_nip_y: 25
+  separation_nip_y: 32
+  pre_registration_sensor_y: 88
+  registration_nip_y: 112
+  image_sync_sensor_y: 138
+  transfer_nip_y: 180
+  fuser_entry_y: 255
+  fuser_exit_y: 285
+  exit_sensor_y: 340
+  output_roller_y: 360
+rollers:
+  pickup_diameter: 18
+  registration_diameter: 12
+  opc_drum_diameter: 30
+  primary_charge_roller_diameter: 10
+  developer_roller_diameter: 16
+  transfer_roller_diameter: 14
+  fuser_hot_roller_diameter: 24
+  fuser_pressure_roller_diameter: 24
+  exit_roller_diameter: 16
+process_cartridge:
+  width: 255
+  depth: 92
+  height: 86
+  service_clearance_above: 40
+  latch_repeatability_target: 0.15
+fuser:
+  module_width: 235
+  module_depth: 62
+  module_height: 70
+  nip_width: 5
+  surface_temp_nominal_c: 178

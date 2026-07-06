@@ -1,0 +1,19 @@
+product: OpenFrame M1
+revision: newbuild-v2-revD
+note: Geometry still points to hardware/design_targets_revA.yaml; active HV values are Rev D generated artifacts.
+authoritative_target_file: hardware/design_targets_revA.yaml
+authoritative_hv_file: hardware/ofp_m1_revD_hv_bias_channels.csv
+generated_hv_artifact: out/v2_hv_bias_channels.json
+is_donor_printer_conversion: false
+technology: monochrome_dry_electrophotographic_led
+image:
+  dpi: 600
+  led_pixels: 5120
+  led_active_width_mm: 216.746667
+speed:
+  letter_ppm: 12
+  process_speed_mm_s_letter: 62.0
+engine:
+  opc_drum_diameter_mm: 30.0
+fuser:
+  nominal_surface_temp_c: 178

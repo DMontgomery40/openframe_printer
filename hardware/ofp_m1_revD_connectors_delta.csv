@@ -1,0 +1,5 @@
+connector,pin,signal,revA_value,revD_value,direction,notes
+J8_PROCESS_CONTACTS,1,PCR_HV,-900V max,"Option A: -1400V max DC; Option B: -750V DC plus 1.7kVpp AC",output,"Rev A -720V nominal retired; connector insulation/spacing must be rechecked for selected PCR option"
+J8_PROCESS_CONTACTS,2,DEV_ROLLER_BIAS,-500V max,-500V max,output,"Nominal remains -320V; optional DEV_MON current-sense path added for H8 lab measurements"
+J8_PROCESS_CONTACTS,3,XFER_HV,+2500V max,+2500V max,output,"Voltage envelope unchanged; Rev D transfer_model adds current-limited impedance sniff control"
+J8_PROCESS_CONTACTS,4,CART_ID_RES,0-3.3V,"0-3.3V passive ID or muxed sense",input,"No authentication lockout; optional measurement mux must fail safe"

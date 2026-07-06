@@ -1,0 +1,4 @@
+OpenFrame M1
+newbuild printer platform
+monochrome EP LED engine
+local first - repairable - no cartridge lockout

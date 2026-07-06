@@ -1,0 +1,5 @@
+rail,target_v,characterization_range_v,current_limit_ma,enabled_during,notes
+primary_charge_roller,-700,-500 to -900,<=1,IMAGING only,negative charge bias starting point
+developer_bias,-300,-150 to -500,<=1,IMAGING only,toner density/background sweep variable
+transfer_roller,+1200,+700 to +2500,<=1,TRANSFER window,transfer efficiency sweep variable
+detack_discharge_optional,-200,0 to -500,<=1,post-transfer optional,optional paper/drum discharge assist

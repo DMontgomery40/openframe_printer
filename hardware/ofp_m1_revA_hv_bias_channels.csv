@@ -1,0 +1,4 @@
+channel,polarity,nominal_v,min_v,max_v,current_limit_uA,ramp_v_per_s,max_output_capacitance_nF,stored_energy_mJ_at_max,control_signal,monitor_signal,output_contact
+PCR_CHARGE,negative,-720,-500,-900,200,250,1.0,0.405,PCR_DAC,PCR_MON,J8_PROCESS_CONTACTS_1
+DEVELOPER_BIAS,negative,-320,-150,-500,300,200,1.0,0.125,DEV_DAC,DEV_MON,J8_PROCESS_CONTACTS_2
+TRANSFER_ROLLER,positive,1600,700,2500,500,500,0.75,2.344,XFER_DAC,XFER_MON,J8_PROCESS_CONTACTS_3
