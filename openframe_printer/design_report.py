@@ -15,6 +15,10 @@ from .pidc_model import synthetic_rig_demo
 from .voltage_ladder import ladder_summary
 from .dev_probe import dev_probe_summary
 from .transfer_model import transfer_impedance_plan
+from .ofp1 import transport_budget
+from .interlock_faults import interlock_fault_summary
+from .halftone import printability_summary
+from .toner_budget import toner_mass_balance
 from .units import lint_artifact
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -148,6 +152,11 @@ def build_report() -> list[Path]:
     paths.append(write_json("v2_dev_probe_budget.json", dev_probe_summary()))
     paths.append(write_json("v2_transfer_impedance_plan.json", transfer_impedance_plan()))
 
+    paths.append(write_json("v2_ofp1_transport_budget.json", transport_budget(t)))
+    paths.append(write_json("v2_interlock_fault_analysis.json", interlock_fault_summary()))
+    paths.append(write_json("v2_halftone_printability.json", printability_summary(t)))
+    paths.append(write_json("v2_toner_mass_balance.json", toner_mass_balance(t)))
+
     paths.append(write_csv("v2_led_group_map.csv", led_group_map(t)))
     paths.append(write_csv("v2_fuser_sim.csv", fuser["rows"]))
     paths.append(write_csv("v2_interlock_matrix.csv", interlock_matrix()))
@@ -208,6 +217,29 @@ It describes a new printer design, not a donor-printer conversion.
 - H8 developer-probe budget: the developer-roller-as-probe idea now has a numeric signal/noise requirement.
 - Transfer impedance control: transfer bias now has a current-mode plan from a paper/nip impedance sniff instead of fixed voltage faith.
 
+## Rev E added engines
+
+- OFP1 is finally a protocol, not a name: binary framing with per-frame CRC-16 and a
+  whole-page CRC, a reference encoder/decoder pair that round-trips bit-exactly, and a
+  transport budget showing a worst-case page needs 7.6 Mbit/s — 78% of the USB Full
+  Speed bulk ceiling. Verdict: HS (or engine page RAM) for 12 ppm production, FS as
+  the degraded service mode. See `v2_ofp1_transport_budget.json`.
+- Interlock single-fault analysis: with adversarial firmware, the documented one-switch-
+  per-door chain has 7 single-point-failure nets (welded contact, shorted loop, stuck
+  enable gate) that leave hazards live with a door open. The Rev E dual-chain topology
+  (logic gates + independent energy-path relay) has zero; defeating it needs two faults.
+  See `v2_interlock_fault_analysis.json`.
+- Halftone printability: EP cannot develop isolated 42 µm pixels stably, so the host
+  screen is now an executable constraint — a 2×2-seeded clustered-dot screen emits zero
+  isolated pixels at every tone while Bayer and error diffusion emit hundreds per
+  64×64 patch in highlights. See `v2_halftone_printability.json`.
+- Toner mass balance: retires the unsourced "about 2400 pages" doc claim (the same
+  doc/artifact-drift class the HV consistency gate exists for). Loss-adjusted yield is
+  ~3990 pages per 80 g at 5%: imperfect transfer and hopper residual cost 17% versus the
+  naive figure. Also derives the waste-cavity volume the cartridge RFQ requirement
+  implies (≥28 cm³) and the pixel-count gauge constant that replaces DRM chips.
+  See `v2_toner_mass_balance.json`.
+
 ## Generated files
 
 - `v2_design_calcs.json`: numeric engine constants and derived timing
@@ -226,6 +258,10 @@ It describes a new printer design, not a donor-printer conversion.
 - `v2_hv_consistency.json`: Rev D HV artifact/voltage-ladder consistency gate
 - `v2_dev_probe_budget.json`: Rev D H8 developer-probe signal budget
 - `v2_transfer_impedance_plan.json`: Rev D paper-impedance transfer-current plan
+- `v2_ofp1_transport_budget.json`: Rev E OFP1 wire-protocol overhead and USB budget
+- `v2_interlock_fault_analysis.json`: Rev E exhaustive single/double-fault interlock analysis
+- `v2_halftone_printability.json`: Rev E EP-safe screen choice with isolated-pixel counts
+- `v2_toner_mass_balance.json`: Rev E loss-adjusted yield, waste-cavity sizing, pixel gauge
 
 ## First v2 hardware direction
 

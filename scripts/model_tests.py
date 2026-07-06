@@ -39,6 +39,26 @@ from openframe_printer.voltage_ladder import (  # noqa: E402
     evaluate_ladder,
     ladder_summary,
 )
+from openframe_printer.ofp1 import (  # noqa: E402
+    EngineDecoder,
+    crc16_ccitt,
+    encode_page,
+    transport_budget,
+)
+from openframe_printer.interlock_faults import (  # noqa: E402
+    eval_topology_a,
+    eval_topology_b,
+    interlock_fault_summary,
+)
+from openframe_printer.halftone import (  # noqa: E402
+    bayer_matrix,
+    clustered_matrix,
+    floyd_steinberg,
+    isolated_black_pixels,
+    printability_summary,
+    screen_halftone,
+)
+from openframe_printer.toner_budget import TonerAssumptions, toner_mass_balance  # noqa: E402
 
 
 class HvArtifactTests(unittest.TestCase):
@@ -229,6 +249,178 @@ class TransferControlTests(unittest.TestCase):
         plan = transfer_impedance_plan()
         choices = {row["case"]: row for row in plan["choices"]}
         self.assertEqual(choices["extreme_impedance_reject_or_slow"]["verdict"], "reject_or_slow_engine_for_transfer_latitude")
+
+
+def _test_page(width_px: int = 5120, lines: int = 200, blank_every: int = 3) -> list[bytes]:
+    """Deterministic page: pseudo-random rows with interleaved blank runs."""
+    row_len = (width_px + 7) // 8
+    rows = []
+    state = 0x1234
+    for i in range(lines):
+        if i % blank_every == 0:
+            rows.append(bytes(row_len))
+            continue
+        row = bytearray()
+        for _ in range(row_len):
+            state = (state * 1103515245 + 12345) & 0x7FFFFFFF
+            row.append(state & 0xFF)
+        rows.append(bytes(row))
+    return rows
+
+
+class Ofp1Tests(unittest.TestCase):
+    def test_round_trip_is_bit_exact(self) -> None:
+        rows = _test_page()
+        frames = encode_page(rows, dpi=600, width_px=5120)
+        decoder = EngineDecoder()
+        for frame in frames:
+            decoder.feed(frame)
+        result = decoder.result()
+        self.assertTrue(result.complete, result.error)
+        self.assertEqual(result.rows, rows)
+        self.assertEqual(result.nacks, [])
+
+    def test_round_trip_survives_arbitrary_chunking(self) -> None:
+        rows = _test_page(lines=60)
+        stream = b"".join(encode_page(rows, dpi=600, width_px=5120))
+        decoder = EngineDecoder()
+        for i in range(0, len(stream), 7):  # deliberately misaligned chunks
+            decoder.feed(stream[i:i + 7])
+        result = decoder.result()
+        self.assertTrue(result.complete, result.error)
+        self.assertEqual(result.rows, rows)
+
+    def test_blank_lines_travel_as_skips_not_payload(self) -> None:
+        rows = [bytes(640)] * 100
+        frames = encode_page(rows, dpi=600, width_px=5120)
+        self.assertEqual(len(frames), 3)  # JOB_START, one SKIP, JOB_END
+        self.assertLess(sum(len(f) for f in frames), 100)
+
+    def test_single_bit_corruption_is_caught_never_printed(self) -> None:
+        rows = _test_page(lines=30)
+        frames = encode_page(rows, dpi=600, width_px=5120)
+        payload_frame = bytearray(frames[2])
+        payload_frame[20] ^= 0x01  # flip one raster bit mid-payload
+        decoder = EngineDecoder()
+        decoder.feed(frames[0] + frames[1] + bytes(payload_frame))
+        for frame in frames[3:]:
+            decoder.feed(frame)
+        result = decoder.result()
+        self.assertFalse(result.complete)  # dropped line -> coverage/order fault
+        self.assertTrue(result.nacks)
+        self.assertNotEqual(result.rows, rows)  # and it never fabricated the page
+
+    def test_crc16_known_vector(self) -> None:
+        self.assertEqual(crc16_ccitt(b"123456789"), 0x29B1)  # CCITT-FALSE check value
+
+    def test_budget_says_fs_is_marginal_not_impossible(self) -> None:
+        budget = transport_budget()
+        self.assertLess(budget["worst_case_required_mbit_s"], budget["usb_fs_bulk_ceiling_mbit_s"])
+        self.assertTrue(budget["usb_fs_is_marginal"])
+        self.assertTrue(budget["ring_buffer_covers_hiccup"])
+
+
+class InterlockFaultTests(unittest.TestCase):
+    def test_no_fault_no_hazard_with_any_door_open(self) -> None:
+        for topology in (eval_topology_a, eval_topology_b):
+            for door in ("main_cover", "rear_door", "service_panel"):
+                doors = {d: d != door for d in ("main_cover", "rear_door", "service_panel")}
+                self.assertFalse(any(topology(doors, {}).values()))
+
+    def test_documented_topology_has_single_point_failures(self) -> None:
+        summary = interlock_fault_summary()
+        a = summary["topology_a_as_documented"]
+        self.assertFalse(a["verdict_single_fault_safe"])
+        self.assertIn("loop:stuck_1", a["single_point_failure_nets"])
+        self.assertIn("sw_main_cover:stuck_closed", a["single_point_failure_nets"])
+
+    def test_rev_e_topology_survives_every_single_fault(self) -> None:
+        summary = interlock_fault_summary()
+        b = summary["topology_b_rev_e_proposal"]
+        self.assertTrue(b["verdict_single_fault_safe"])
+        self.assertEqual(b["single_fault_violation_count"], 0)
+        self.assertGreater(b["double_fault_violation_count"], 0)
+
+    def test_welded_contact_plus_open_door_is_the_canonical_defeat(self) -> None:
+        doors = {"main_cover": False, "rear_door": True, "service_panel": True}
+        live_a = eval_topology_a(doors, {"sw_main_cover": "stuck_closed"})
+        self.assertTrue(all(live_a.values()))
+        live_b = eval_topology_b(doors, {"sw_main_cover_a": "stuck_closed"})
+        self.assertFalse(any(live_b.values()))
+
+
+class HalftoneTests(unittest.TestCase):
+    def test_seeded_screen_never_emits_isolated_pixels(self) -> None:
+        summary = printability_summary()
+        self.assertTrue(summary["seeded_screen_ep_safe"])
+        self.assertEqual(summary["worst_isolated_px_seeded_screen"], 0)
+
+    def test_dispersed_methods_fail_ep_lint_in_highlights(self) -> None:
+        summary = printability_summary()
+        self.assertGreater(summary["worst_isolated_px_bayer_dispersed"], 100)
+        self.assertGreater(summary["worst_isolated_px_error_diffusion"], 100)
+
+    def test_screen_tone_is_monotonic_in_gray_level(self) -> None:
+        matrix = clustered_matrix()
+        previous = -1
+        for level in [i / 20.0 for i in range(21)]:
+            patch = [[level] * 16 for _ in range(16)]
+            black = sum(map(sum, screen_halftone(patch, matrix)))
+            self.assertGreaterEqual(black, previous)
+            previous = black
+
+    def test_error_diffusion_preserves_mean_tone(self) -> None:
+        patch = [[0.25] * 64 for _ in range(64)]
+        out = floyd_steinberg(patch)
+        mean = sum(map(sum, out)) / (64 * 64)
+        self.assertAlmostEqual(mean, 0.25, delta=0.02)
+
+    def test_bayer_really_is_dispersed(self) -> None:
+        # Sanity that the comparator is honest: at the 2-pixel tone level the
+        # Bayer cell's two lit pixels are far apart, the clustered cell's touch.
+        patch = [[2.5 / 64.0] * 8 for _ in range(8)]
+        self.assertGreater(isolated_black_pixels(screen_halftone(patch, bayer_matrix())), 0)
+        self.assertEqual(isolated_black_pixels(screen_halftone(patch, clustered_matrix())), 0)
+
+
+class TonerBudgetTests(unittest.TestCase):
+    def test_losses_cost_double_digit_yield_percentage(self) -> None:
+        balance = toner_mass_balance()
+        self.assertLess(balance["rated_pages_at_coverage"], balance["naive_pages_ignoring_losses"])
+        self.assertAlmostEqual(
+            balance["rated_over_naive_ratio"],
+            (1.0 - 0.08) * 0.9,
+            places=6,
+        )
+
+    def test_mass_is_conserved_per_page(self) -> None:
+        balance = toner_mass_balance()
+        self.assertAlmostEqual(
+            balance["developed_per_page_mg_at_coverage"],
+            balance["on_paper_per_page_mg_at_coverage"] + balance["waste_per_page_mg_at_coverage"],
+            places=9,
+        )
+
+    def test_waste_cavity_requirement_scales_with_transfer_loss(self) -> None:
+        worse = toner_mass_balance(assume=TonerAssumptions(transfer_efficiency=0.80))
+        base = toner_mass_balance()
+        self.assertGreater(
+            worse["required_waste_cavity_cm3_with_margin"],
+            base["required_waste_cavity_cm3_with_margin"],
+        )
+
+    def test_pixel_gauge_constant_matches_laydown_model(self) -> None:
+        balance = toner_mass_balance()
+        # 1 Mpx of black at 600 dpi is 17.92 cm^2; developed mass = area * DMA / eta.
+        expected = 17.92111 * 0.55 / 0.90
+        self.assertAlmostEqual(
+            balance["gauge"]["developed_mg_per_megapixel_black"], expected, delta=0.01
+        )
+
+    def test_retired_2400_page_claim_stays_retired(self) -> None:
+        balance = toner_mass_balance()
+        self.assertGreater(balance["rated_pages_at_coverage"], 3500.0)
+        self.assertEqual(balance["doc_consistency"]["retired_claim"], "about 2400 pages")
 
 
 if __name__ == "__main__":

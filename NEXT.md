@@ -21,6 +21,16 @@ Pass/fail:
 - Latch and OE timing remain deterministic for one full Letter page.
 - Output enable is removed by the hardware interlock gate, not just firmware.
 
+## 2b. Run the OFP1 loopback before the LED jig carries real jobs
+
+OFP1 is now defined (`docs/39_revE_ofp1_protocol.md`, `openframe_printer/ofp1.py`). Before the LED jig consumes host jobs, run host encoder against engine decoder over the real transport (USB serial), not just in-process.
+
+Pass/fail:
+
+- One full Letter page round-trips bit-exactly over the physical link at the 12 ppm line rate.
+- Injected corruption (bit flips, truncated frames, mid-stream garbage) produces NACKs and a job fault, never a silently altered page.
+- Worst-case page sustains its line rate with the engine ring buffer never emptying; if USB Full Speed cannot hold it on the bench, record it and spec High Speed, per `out/v2_ofp1_transport_budget.json`.
+
 ## 3. Build the potted-HV dummy-load jig
 
 Use `hardware/ofp_m1_revD_hv_bias_channels.csv` and generated `out/v2_hv_bias_channels.json`, not the historical Rev A HV table. The Rev A PCR target (−720 V) is retired: the voltage ladder shows it cannot charge the drum to the −600 V the exposure and development model assumes. Pick charging Option A or Option B before specifying the HV module:
@@ -69,6 +79,16 @@ Pass/fail:
 - Normal dummy impedances from 8 MΩ to 300 MΩ choose a valid transfer current and remain at or below the 2500 V transfer ceiling.
 - The 800 MΩ extreme case rejects or slows the engine instead of silently accepting a likely under-transfer condition.
 - The transfer module never exceeds the 500 µA hardware channel current limit.
+
+## 3e. Interlock fault-injection test (before anything hazardous is energized)
+
+`out/v2_interlock_fault_analysis.json` proves the single-loop chain has 7 single-point failures and the Rev E dual-chain topology has none. Build the dual chain (two contacts per door: chain A to logic gates, chain B to an energy-path relay/SSR) and physically inject the faults the model enumerates.
+
+Pass/fail:
+
+- With any one contact bridged (simulated weld), any one loop shorted to its enable rail, or any one gate output forced high, opening any door still de-energizes HV, LED, and fuser paths.
+- Firmware driving all requests high during every injected fault never re-energizes a hazard with a door open.
+- Each injected fault is detectable (chain A/B disagreement raises a service fault) so a real weld does not wait silently for its partner fault.
 
 ## 4. Build the fuser thermal jig
 

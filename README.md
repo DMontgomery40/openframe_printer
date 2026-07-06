@@ -4,7 +4,7 @@ OpenFrame M1 is a from-scratch modular printer design package. It is **not** a c
 
 ## Primary build target
 
-**OpenFrame M1 Rev D package, derived from the original Rev A geometry**
+**OpenFrame M1 Rev E package, derived from the original Rev A geometry**
 
 - Technology: monochrome dry electrophotographic printer with a stationary LED exposure bar
 - Print mode: 1-bit monochrome, 600 dpi
@@ -45,7 +45,17 @@ Rev D found and fixed a Rev C artifact drift: Rev C's prose and CSV retired the 
 - **H8 developer-roller probe budget** (`openframe_printer/dev_probe.py`, doc 36): turns the developer-as-electrostatic-probe idea into a signal/noise budget. A 64×64-pixel patch gives about 6.45 nA full-scale ideal signal; a realistic first test should use 128×128 patches and a real transimpedance/current-sense DEV_MON mode. Plain HV voltage readback is not assumed good enough.
 - **Transfer impedance control** (`openframe_printer/transfer_model.py`, doc 37): replaces fixed transfer-voltage faith with a current-limited paper/nip impedance sniff. Normal paper impedances run at the voltage target; extreme dry/high-impedance cases are rejected or slowed instead of silently under-transferring.
 - **New falsifiable hypotheses** (doc 38): developer TIA mode as a calibrator, density-aware transfer waveform shaping, and a sacrificial non-image impedance strip for low-cost paper classification.
-- Focused test suite: `python3 scripts/model_tests.py` now runs 28 tests alongside the generated-artifact smoke test.
+- Focused test suite: `python3 scripts/model_tests.py` runs alongside the generated-artifact smoke test.
+
+## What changed in Rev E
+
+Rev D hardened the electrostatics; Rev E covers the four subsystems no revision had modeled at all — the wire protocol, the safety chain's fault tolerance, the raster screen, and the consumable mass balance:
+
+- **OFP1 exists now** (`openframe_printer/ofp1.py`, doc 39): every revision since v1 *named* the "deterministic OFP1 protocol"; none defined it. Rev E ships the binary framing (per-frame CRC-16/CCITT, whole-page CRC, blank-line SKIP compression), a reference encoder and engine-side decoder that round-trip a page bit-exactly under arbitrary byte chunking, and proof that a flipped bit is NACKed, never printed. The transport budget is honest: a worst-case page needs 7.6 Mbit/s — 78% of the USB Full Speed bulk ceiling — so production is USB High Speed, FS is the degraded service mode.
+- **Interlock single-fault analysis** (`openframe_printer/interlock_faults.py`, doc 40): exhaustively enumerates stuck-at faults with adversarial firmware. The chain as documented has **7 single-point-failure nets** — one welded cover switch, one shorted loop, or one stuck enable gate leaves HV/LED/fuser live with a door open. The Rev E dual-chain topology (logic gates plus an independent energy-path relay) survives every single fault; defeating it requires two.
+- **EP-safe halftoning** (`openframe_printer/halftone.py`, doc 41): EP cannot stably develop an isolated 42 µm pixel, so the host screen is now an executable constraint. The 2×2-seeded clustered-dot screen emits zero isolated pixels at every tone; Bayer and error diffusion emit up to ~1000 per 64×64 highlight patch and are rejected with numbers, not folklore.
+- **Toner mass balance and the no-DRM gauge** (`openframe_printer/toner_budget.py`, doc 42): retires a live doc/artifact contradiction — docs claimed "about 2400 pages" per 80 g while the generated math said ~4800; neither survived. The loss-adjusted model (90% transfer efficiency, 8% hopper residual) rates ~4000 pages, sizes the cartridge waste cavity the RFQ requirement implies (≈28 cm³), and derives the pixel-count gauge constant (~11 mg per million black pixels) that replaces lockout chips.
+- Focused test suite: `python3 scripts/model_tests.py` now runs 48 tests alongside the generated-artifact smoke test.
 
 ## Important safety boundary
 

@@ -31,6 +31,10 @@ required = [
     "out/v2_hv_consistency.json",
     "out/v2_dev_probe_budget.json",
     "out/v2_transfer_impedance_plan.json",
+    "out/v2_ofp1_transport_budget.json",
+    "out/v2_interlock_fault_analysis.json",
+    "out/v2_halftone_printability.json",
+    "out/v2_toner_mass_balance.json",
 ]
 for rel in required:
     p = ROOT / rel
@@ -154,6 +158,32 @@ assert "| PCR charge | -720 V" not in hv_doc
 assert "Primary charge roller | -720 V" not in rfq_cart
 assert "charge roller reaches -720 V" not in rfq_cart
 assert "ofp_m1_revC_hv_bias_channels.csv" not in next_doc
-assert "28 tests" in readme
+assert "48 tests" in readme
+
+# Rev E: OFP1 transport budget must state the honest USB verdict.
+ofp1 = json.loads((ROOT / "out/v2_ofp1_transport_budget.json").read_text(encoding="utf-8"))
+assert ofp1["worst_case_required_mbit_s"] < ofp1["usb_fs_bulk_ceiling_mbit_s"]
+assert ofp1["usb_fs_is_marginal"] is True
+assert ofp1["ring_buffer_covers_hiccup"] is True
+
+# Rev E: interlock chain as documented is NOT single-fault safe; the dual-chain fix is.
+faults = json.loads((ROOT / "out/v2_interlock_fault_analysis.json").read_text(encoding="utf-8"))
+assert faults["topology_a_as_documented"]["verdict_single_fault_safe"] is False
+assert faults["topology_b_rev_e_proposal"]["verdict_single_fault_safe"] is True
+assert faults["topology_b_rev_e_proposal"]["double_fault_violation_count"] > 0
+
+# Rev E: default screen must be EP-safe, dispersed comparators must fail the lint.
+screen = json.loads((ROOT / "out/v2_halftone_printability.json").read_text(encoding="utf-8"))
+assert screen["seeded_screen_ep_safe"] is True
+assert screen["worst_isolated_px_error_diffusion"] > 100
+assert screen["worst_isolated_px_bayer_dispersed"] > 100
+
+# Rev E: toner yield is loss-adjusted, and the retired 2400-page doc claim stays dead.
+toner = json.loads((ROOT / "out/v2_toner_mass_balance.json").read_text(encoding="utf-8"))
+assert 3500.0 < toner["rated_pages_at_coverage"] < toner["naive_pages_ignoring_losses"]
+assert toner["required_waste_cavity_cm3_with_margin"] > 20.0
+consumables_doc = (ROOT / "docs/25_open_consumables_spec.md").read_text(encoding="utf-8")
+assert "about 2400 pages" not in consumables_doc
+assert "v2_toner_mass_balance.json" in consumables_doc
 
 print("smoke_test: OK")

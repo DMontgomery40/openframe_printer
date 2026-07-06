@@ -1,5 +1,14 @@
 # Changelog
 
+## Engineering Rev E
+
+- Added `openframe_printer/ofp1.py`: the OFP1 wire protocol, referenced by name since v1 and never defined, is now a specified binary framing (CRC-16/CCITT per frame, whole-page CRC, blank-line SKIP runs) with a reference encoder and engine-side decoder. Round-trip is bit-exact under arbitrary chunking; a single flipped bit is NACKed and can never reach paper. `out/v2_ofp1_transport_budget.json` shows a worst-case page needs 7.6 Mbit/s, 78% of the USB Full Speed bulk ceiling: production transport is USB High Speed, FS is the degraded service mode.
+- Added `openframe_printer/interlock_faults.py`: exhaustive stuck-at fault enumeration of the interlock chain under adversarial firmware. The documented one-switch-per-door chain has 7 single-point-failure nets that leave hazards live with a door open; the proposed dual-chain topology (logic enable gates + independent energy-path relay, two contacts per door) survives every single fault. Emits `out/v2_interlock_fault_analysis.json`.
+- Added `openframe_printer/halftone.py`: EP-aware halftoning. A 2×2-seeded clustered-dot screen guarantees no sub-development-size (isolated 42 µm) feature at any tone; Bayer and Floyd-Steinberg comparators fail the isolated-pixel lint by hundreds per highlight patch. Emits `out/v2_halftone_printability.json`.
+- Added `openframe_printer/toner_budget.py`: toner mass balance. Retired the unsourced "about 2400 pages" claim in `docs/25_open_consumables_spec.md` (generated math said ~4800 naive; the loss-adjusted rating is ~4000 at 90% transfer efficiency and 8% hopper residual — the same doc/artifact-drift class Rev D's HV gate catches, still live in Rev D). Sizes the waste cavity the cartridge RFQ requirement implies and derives the pixel-count no-DRM gauge constant. Emits `out/v2_toner_mass_balance.json`.
+- Added docs 39–42 (OFP1 protocol, interlock fault analysis, halftone printability, toner mass balance) and NEXT.md rigs 2b (OFP1 loopback) and 3e (interlock fault-injection).
+- Expanded `scripts/model_tests.py` from 28 to 48 tests; smoke test now requires the four Rev E artifacts and keeps the retired 2400-page claim out of the docs.
+
 ## Engineering Rev D
 
 - Fixed a Rev C artifact regression: `hardware/ofp_m1_revC_hv_bias_channels.csv` retired the impossible −720 V PCR bias, but generated `out/v2_hv_bias_channels.json` still emitted the old Rev A value. Rev D moves the Rev C charging fixes into `openframe_printer/hv_model.py` and makes the generated JSON authoritative.
